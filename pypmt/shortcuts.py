@@ -3,7 +3,6 @@ from unified_planning.io import PDDLReader
 
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.basic import EncoderSequential, EncoderForall
-from pypmt.encoders.OMT import EncoderSequentialOMT, EncoderParallelOMT
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 

@@ -31,7 +31,7 @@ def can_create_file(full_path):
 
 def create_parser():
     """
-    Specifies valid arguments for OMTPlan
+    Specifies valid arguments for pyPMTcli
     Default values for parameters are stored in the config class
     """
 
@@ -42,8 +42,6 @@ def create_parser():
     parser.add_argument('--domain', required=True, metavar='domain.pddl', help='Path to PDDL domain file', type=_is_valid_file)
 
     # Optional arguments. process_arguments forces one of the encodings to be true.
-    parser.add_argument('--omt', action='store_true', help='Use the OMT encoding.')
-    parser.add_argument('--pomt', action='store_true', help='Use the parallel OMT encoding with forall-step semantics.')
     parser.add_argument('--seq', action='store_true', help='Use the sequential SMT encoding.')
     parser.add_argument('--forall', action='store_true', help='Use the parallel SMT encoding with forall-step semantics.')
     parser.add_argument('--r2e', action='store_true', help='Use the R2E encoding.')
@@ -79,10 +77,6 @@ def process_arguments(args):
         configuration = "seq"
     elif args.forall:
         configuration = "forall"
-    elif args.omt:
-        configuration = "omt"
-    elif args.pomt:
-        configuration = "pomt"
     elif args.r2e:
         configuration = "r2e"
     elif args.uf:

@@ -10,7 +10,7 @@ To integrate a new encoding there are a few requirements:
 - Overwrite the `__iter__` and `__len__` methods to respectively go through the actions and give the maximum bound of the encoded formula
 - The basic search method in `planner/SMT.py` (the `SMTSearch` class) needs the encoder to have the `encode(t)` method, a `ctx` attribute to be able to assert the bound and the `extract_plan` method. 
 - in `shared/valid_configs.py` you can add the new configuration for the encoding.
-- in `omtplancli.py` you can add support for it in the CLI interface. This should at some point be automated from the configurations though ...
+- in `pypmtcli.py` you can add support for it in the CLI interface. This should at some point be automated from the configurations though ...
 
 ## Adding a new search procedure
 

@@ -44,4 +44,4 @@ Further documentation is available [here]().
 [Joan Espasa Arxer](https://github.com/JoanEspasa)
 [Francesco Leofante](https://fraleo.github.io)
 
-Do not hesitate to contact us if you have problems using OMTPlan, or if you find bugs :)
+Do not hesitate to contact us if you have problems using pyPMT, or if you find bugs :)
