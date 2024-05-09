@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pypmt"
+version = "0.1.0"
+description = "A library for planning modulo theories"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+z3-solver = "^4.11.0.0"
+unified-planning = "^1.1.0"
+up-pyperplan = "^1.1.0"
+networkx = "^3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+omtplancli = 'omtplan.omtplancli:main'

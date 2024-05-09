@@ -1,0 +1,91 @@
+import unified_planning as up
+from unified_planning.io import PDDLReader
+
+from pypmt.encoders.R2E import EncoderRelaxed2Exists
+from pypmt.encoders.basic import EncoderForall, EncoderSequential
+
+from pypmt.encoders.base import Encoder
+from pypmt.encoders.OMT import EncoderSequentialOMT, EncoderParallelOMT
+from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
+from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
+
+from pypmt.planner.SMT import SMTSearch
+from pypmt.planner.lifted import LiftedSearch
+from pypmt.planner.QFUF import QFUFSearch
+
+from pypmt.shared.valid_configs import valid_configs
+
+from pypmt.config import config
+
+def create_encoder(encoder:Encoder, domainfile:str, problemfile:str):
+    task = PDDLReader().parse_problem(domainfile, problemfile)
+    return encoder(task)
+
+def generate_schedule():
+    encoder = config.get("encoder")
+    upperbound = config.get("ub")
+    return generate_schedule_for(encoder, upperbound)
+
+def generate_schedule_for(encoder, upperbound):
+    schedule = None
+    # encode
+    if encoder in [EncoderSequentialOMT, EncoderParallelOMT]:
+        schedule = []
+        for p in [10,15,25,35,50,75,100]:
+            schedule.append(int((p * upperbound) / 100))
+    elif encoder in [EncoderSequentialLifted, EncoderSequentialQFUF, \
+                     EncoderSequential, EncoderForall, EncoderRelaxed2Exists]:
+        schedule = list(range(0, upperbound))
+    else:
+        raise Exception(f"Unknown encoder {encoder}")
+    return schedule
+
+def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True):
+    """!
+    Basic entry point to start searching
+    Beforehand the config has to be set by doing for example:
+
+    from omtplan.config import config
+    from omtplan.encoders.encoderSMT import EncoderSequentialSMT
+    from omtplan.planner.SMT import SMTSearch
+    config.set("encoder", EncoderSequentialSMT)
+    config.set("search", SMTSearch)
+    solve(domainfile, problemfile)
+
+    or passing them as parameters:
+    solve(domainfile, problemfile, "qfuf")
+    """
+    if config_name is not None:
+        config.set("encoder", valid_configs[config_name][0])
+        config.set("search", valid_configs[config_name][1])
+
+    encoder = config.get("encoder")
+    assert encoder is not None, "Encoder not set"
+    schedule = generate_schedule()
+    encoder_instance = create_encoder(encoder, domainfile, problemfile)
+
+    # search
+    search_strategy = config.get("search")
+    plan = search_strategy(encoder_instance, schedule).search()
+    if validate_plan: plan.validate()
+    return plan
+
+def dump_smtlib(domainfile:str, problemfile:str, path:str, bound=None, config_name=None):
+    """!
+    Basic entry point to dump a SMTLIB2 file
+    """
+    if config_name is not None:
+        config.set("encoder", valid_configs[config_name][0])
+        config.set("search", valid_configs[config_name][1])
+
+    encoder = config.get("encoder")
+
+    if bound is None: # get the bound we want
+        bound = config.get("ub")
+
+    assert encoder is not None, "Encoder not set!"
+    schedule = generate_schedule()
+    encoder_instance = create_encoder(encoder, domainfile, problemfile)
+    search_strategy = config.get("search")
+    # create an instance of the search strategy and dump the generated SMTLIB code
+    search_strategy(encoder_instance, schedule).dump_smtlib_to_file(bound, path)
