@@ -21,4 +21,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-omtplancli = 'omtplan.omtplancli:main'
+pypmtcli = 'pypmt.pypmtcli:main'
