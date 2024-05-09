@@ -31,7 +31,7 @@ To produce an SMT-LIB encoding of the problem (instead of solving it), type, e.g
 pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.pddl --dump
 ```
 
-pyPMT can be used as a library too. See [here]() for some examples.
+pyPMT can be used as a library too. See [here](https://github.com/pyPMT/quick-start) for some examples.
 
 ## Documentation
 
