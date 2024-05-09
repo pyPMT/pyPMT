@@ -51,7 +51,7 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
 
     or passing them as parameters:
     from pypmt.apis import solve
-    solve(domainfile, problemfile, "qfuf")
+    solve(domainfile, problemfile, "qfuf") 
     """
     if config_name is not None:
         config.set("encoder", valid_configs[config_name][0])
