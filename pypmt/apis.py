@@ -45,14 +45,12 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     Basic entry point to start searching
     Beforehand the config has to be set by doing for example:
 
-    from omtplan.config import config
-    from omtplan.encoders.encoderSMT import EncoderSequentialSMT
-    from omtplan.planner.SMT import SMTSearch
-    config.set("encoder", EncoderSequentialSMT)
-    config.set("search", SMTSearch)
-    solve(domainfile, problemfile)
+    from pypmt.config import config
+    from pypmt.encoders.basic import EncoderSequential
+    from pypmt.planner.SMT import SMTSearch
 
     or passing them as parameters:
+    from pypmt.apis import solve
     solve(domainfile, problemfile, "qfuf")
     """
     if config_name is not None:
