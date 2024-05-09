@@ -28,7 +28,7 @@ pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.
 To produce an SMT-LIB encoding of the problem (instead of solving it), type, e.g.
 
 ```
-pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.pddl --dump
+pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.pddl --dump output.smt2
 ```
 
 pyPMT can be used as a library too. See [here](https://github.com/pyPMT/quick-start) for some examples.
@@ -41,7 +41,7 @@ Further documentation is available [here](https://github.com/pyPMT/pyPMT/blob/ma
 ## Authors
 
 [Mustafa F Abdelwahed](https://github.com/MFaisalZaki)
-[Joan Espasa Arxer](https://github.com/JoanEspasa)
+[Joan Espasa Arxer](https://joanespasa.github.io/)
 [Francesco Leofante](https://fraleo.github.io)
 
 Do not hesitate to contact us if you have problems using pyPMT, or if you find bugs :)
