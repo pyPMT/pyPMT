@@ -22,7 +22,7 @@ def can_create_file(full_path):
     # Extract the directory path from the full path
     full_path = os.path.abspath(full_path) # if relative, transform to absolute
     directory = os.path.dirname(full_path)
-    
+
     # Check if the file can be created at the specified path
     if os.access(directory, os.F_OK) and os.access(directory, os.W_OK):
         return True
@@ -59,13 +59,13 @@ def create_parser():
 
 def process_arguments(args):
     """ gets the parsed command line arguments and sets the config object """
-    
+
     if args.verbose: # set the verbosity level
         config.set('verbose', args.verbose)
 
     if args.bound: # parse the bound, which is both used for the dump bound and the upper bound when doing search
         config.set('ub', args.bound)
-    
+
     dump = None # parse the specified dump path
     if args.dump:
         if can_create_file(args.dump):
@@ -75,9 +75,9 @@ def process_arguments(args):
 
     # decide on the correct encoding
     configuration = None
-    if args.seq:    
+    if args.seq:
         configuration = "seq"
-    elif args.forall:    
+    elif args.forall:
         configuration = "forall"
     elif args.omt:
         configuration = "omt"
@@ -93,7 +93,7 @@ def process_arguments(args):
         raise argparse.ArgumentError("No encoding specified!")
 
     return dump, configuration
-    
+
 def dump_encoding(domain, problem, config, path):
     """!
     Given a domain, problem and config, dump a SMTLIB2 file
@@ -129,7 +129,7 @@ def main(args=None):
     # if this gets more complex might be beneficial to implement a git-like approach
     # as in having various actions for the CLI, such as "solve" or "dump"
     dump_path, configuration = process_arguments(args)
-    
+
     if dump_path:
         dump_encoding(args.domain, args.problem, configuration, dump_path)
     else:
