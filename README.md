@@ -35,7 +35,7 @@ pyPMT can be used as a library too. See [here](https://github.com/pyPMT/quick-st
 
 ## Documentation
 
-Further documentation is available [here](https://github.com/pyPMT/html/index.html).
+Further documentation is available [here](https://github.com/pyPMT/pyPMT/blob/main/html/index.html).
 
 
 ## Authors
