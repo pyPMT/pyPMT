@@ -7,6 +7,7 @@ from pypmt.encoders.basic import EncoderForall, EncoderSequential
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
+from pypmt.encoders.OMT import EncoderSequentialOMT
 
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.lifted import LiftedSearch
@@ -29,7 +30,8 @@ def generate_schedule_for(encoder, upperbound):
     schedule = None
     # encode
     if encoder in [EncoderSequentialLifted, EncoderSequentialQFUF, \
-                    EncoderSequential, EncoderForall, EncoderRelaxed2Exists]:
+                    EncoderSequential, EncoderForall, EncoderRelaxed2Exists,\
+                    EncoderSequentialOMT]:
         schedule = list(range(0, upperbound))
     else:
         raise Exception(f"Unknown encoder {encoder}")
