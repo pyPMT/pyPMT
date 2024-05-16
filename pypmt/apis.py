@@ -60,7 +60,7 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     # search
     search_strategy = config.get("search")
     plan = search_strategy(encoder_instance, schedule).search()
-    if validate_plan: plan.validate()
+
     return plan
 
 def dump_smtlib(domainfile:str, problemfile:str, path:str, bound=None, config_name=None):
