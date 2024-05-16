@@ -41,7 +41,7 @@ class EncoderOMT(EncoderGrounded):
         # for actions
         for grounded_action in self.ground_problem.actions:
             key   = str_repr(grounded_action)
-            keyt  = str_repr(grounded_action, t)
+            keyt  = "abs_" + key
             act_var = z3.Bool(keyt, ctx=self.ctx)
             self.up_actions_to_aux_z3[key].append(act_var)
             self.aux_z3_actions_to_up[act_var] = key
@@ -50,7 +50,7 @@ class EncoderOMT(EncoderGrounded):
         grounded_up_fluents = [f for f, _ in self.ground_problem.initial_values.items()]
         for grounded_fluent in grounded_up_fluents:
             key  = str_repr(grounded_fluent)
-            keyt = str_repr(grounded_fluent, t+1)
+            keyt = "mod_" + key
             if grounded_fluent.type.is_real_type() or grounded_fluent.type.is_bool_type():
                 self.up_fluent_to_aux_z3[key].append(z3.Bool(keyt, ctx=self.ctx))
             else:
@@ -68,8 +68,8 @@ class EncoderOMT(EncoderGrounded):
 
         # Otherwise we do the proper substitutions
         self.create_variables(t+1)  # base_encode added vars for step 0, so we only need to add t+1
-        self.create_aux_variables(t+1)
-
+        
+        
         list_substitutions = [] # list of pairs (from,to)
         for key in self.up_actions_to_z3.keys():
             list_substitutions.append(
@@ -82,17 +82,7 @@ class EncoderOMT(EncoderGrounded):
             list_substitutions.append(
                 (self.up_fluent_to_z3[key][1],
                  self.up_fluent_to_z3[key][t + 1]))
-            
-        for key in self.up_actions_to_aux_z3.keys():
-            list_substitutions.append(
-                (self.up_actions_to_aux_z3[key][1],
-                 self.up_actions_to_aux_z3[key][t+1]))
-        for key in self.up_fluent_to_z3.keys():
-            list_substitutions.append(
-                (self.up_fluent_to_z3[key][2],
-                 self.up_fluent_to_z3[key][t + 2]))    
-
-
+    
         # Start encoding basic building block using rename variables from substitution  
         encoded_formula = dict()
         encoded_formula['initial']    = self.formula['initial']
@@ -106,7 +96,7 @@ class EncoderOMT(EncoderGrounded):
         encoded_formula['abstract_goal']       = substitute(self.formula['abstract_goal'], list_substitutions)
         encoded_formula['loop_formulas']       = substitute(self.formula['loop_formulas'], list_substitutions)
 
-        encoded_formula['objective']       = substitute(self.formula['objective'], list_substitutions)
+        encoded_formula['objective']       = self.encode_objective()
 
 
         return encoded_formula
@@ -128,16 +118,12 @@ class EncoderOMT(EncoderGrounded):
         self.formula['sem']     = z3.And(self.encode_execution_semantics())  # Encode execution semantics (lin/par)    
         self.formula['goal']    = z3.And(self.encode_goal_state(0))  # Encode goal state axioms
 
-
         # Abstract encoding
         self.formula['abstract_actions'] = z3.And(self.encode_abstract_actions(0)) # Encode relaxed universal axioms
         self.formula['abstract_goal']    = z3.And(self.encode_abstract_goal_state(0))  # Encode abstract goal state axioms
         self.formula['loop_formulas']    = z3.And(self.encode_loop_formulas(0)) # Encode loop formula
-
-        # Optimisation objective
-        self.formula['objective'] = sum(self.encode_objective(0))
-
-
+       
+     
     def _free_to_abs_variables(self,formula,t):
         fluents = formula.environment.free_vars_extractor.get(formula)
                 
@@ -161,20 +147,20 @@ class EncoderOMT(EncoderGrounded):
 
         for grounded_action in self.ground_problem.actions:
             key = str_repr(grounded_action)
-            action_var = self.up_actions_to_aux_z3[key][t]
+            action_var = self.up_actions_to_aux_z3[key][-1] # need the last one
 
             # create the action abstract precondition
             action_pre = []
             for pre in grounded_action.preconditions:
-                vars = self._free_to_abs_variables(pre,t)                
-                action_pre.append(z3.Or(self._expr_to_z3(pre, t),z3.Or(vars)))
+                vars = self._free_to_abs_variables(pre,-1)                
+                action_pre.append(z3.Or(self._expr_to_z3(pre, t+1),z3.Or(vars)))
         
             
             # create the action abstract effect on auxiliary variables
             action_eff = []
             for eff in grounded_action.effects:
                 key = str_repr(eff.fluent)
-                var = self.up_fluent_to_aux_z3[key][t]
+                var = self.up_fluent_to_aux_z3[key][-1]
                 
                 action_eff.append(var)
 
@@ -199,10 +185,11 @@ class EncoderOMT(EncoderGrounded):
             Encodes formula defining abstract goal state
             @return goal: Z3 formula asserting propositional and numeric subgoals
             """
+            # TODO: assuming conjunctive goals for now
             goal = []
             for goal_pred in self.task.goals:
-                vars = self._free_to_abs_variables(goal_pred,t)
-                goal.append(z3.Or(self._expr_to_z3(goal_pred, t + 1), z3.Or(vars)))
+                vars = self._free_to_abs_variables(goal_pred,-1)
+                goal.append(z3.Or(self._expr_to_z3(goal_pred, t+1), z3.Or(vars)))
             return goal
     
     def encode_loop_formulas(self,t):
@@ -228,14 +215,14 @@ class EncoderOMT(EncoderGrounded):
                         
                         action_pre = []
                         for pre in grounded_action.preconditions:
-                            flat_abstract_pre = self._free_to_abs_variables(pre,t)    
-                            flat_abstract_pre.append(self._expr_to_z3(pre, t))            
+                            flat_abstract_pre = self._free_to_abs_variables(pre,-1)    
+                            flat_abstract_pre.append(self._expr_to_z3(pre, t+1))            
                             action_pre.append(flat_abstract_pre)
                         
                         
                         for l in list(loop):
                             key = str_repr(l)
-                            var = self.up_fluent_to_aux_z3[key][t]
+                            var = self.up_fluent_to_aux_z3[key][-1]
                             if var not in l_vars:
                                 l_vars.append(var)
 
@@ -278,8 +265,7 @@ class EncoderOMT(EncoderGrounded):
 
                 for pre in grounded_action.preconditions:
                     edges.append((eff.fluent,pre))
-             
-
+            
                     for fluent in pre.environment.free_vars_extractor.get(pre):
                         edges.append((eff.fluent,fluent)) 
                     
@@ -305,7 +291,7 @@ class EncoderOMT(EncoderGrounded):
         
         return scc 
                      
-    def encode_objective(self,t):
+    def encode_objective(self):
 
         objective = []
 
@@ -316,13 +302,13 @@ class EncoderOMT(EncoderGrounded):
             
             for grounded_action in self.ground_problem.actions:
                 key = str_repr(grounded_action)
-                action_var = self.up_actions_to_z3[key][t]
-                abs_action_var = self.up_actions_to_aux_z3[key][t]
-
-                objective.append(z3.If(action_var,1.0,0.0))
+                abs_action_var = self.up_actions_to_aux_z3[key][-1]
                 objective.append(z3.If(abs_action_var,1.0,0.0))
 
-        return objective
+                for a in self.up_actions_to_z3[key]:
+                    objective.append(z3.If(a,1.0,0.0))
+                
+        return sum(objective)
 
    
 

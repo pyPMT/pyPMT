@@ -14,8 +14,7 @@ class OMTSearch(Search):
 
     def search(self):
         self.horizon = 0
-        self.solution = SMTSequentialPlan(None, None)
-
+        
         log(f'Starting to solve', 1)
         total_time = 0
         for horizon in self.scheduler:
@@ -40,6 +39,13 @@ class OMTSearch(Search):
             self.solver.add(reified_goal) # Add the goal
             del formula['abstract_goal']
 
+            # deal with abstract formulas 
+            reified_abstract_formulas = z3.Implies(g, z3.And(formula['abstract_actions'],formula['loop_formulas'] ))
+            self.solver.add(reified_abstract_formulas) # Add the abstract transition formulas
+            del formula['abstract_actions']
+            del formula['loop_formulas']
+
+            
             # deal with the objective
             if 'objective' in formula:
                 self.solver.minimize(formula['objective'])
@@ -62,15 +68,16 @@ class OMTSearch(Search):
             total_time = total_time + solving_time + encoding_time
             log(f'Step {horizon+1}/{(self.scheduler[-1]+1)} encoding: {encoding_time:.2f}s, solving: {solving_time:.2f}s', 2)
             if res == z3.sat:
+                print("sat")
                 model = self.solver.model()
                 if model.eval(formula['goal']):
-                    print(model.eval(formula['goal']))
                     log(f'Satisfiable model found. Took:{total_time:.2f}s', 3)
                     log(f'Z3 statistics:\n{self.solver.statistics()}', 4)
                     self.solution = self.encoder.extract_plan(self.solver.model(), self.horizon)
                     break
                 else:
                     print("not optimal")
+
         return self.solution
 
     def dump_smtlib_to_file(self, t, path):
@@ -79,11 +86,14 @@ class OMTSearch(Search):
         log(f'Encoding problem into a SMTLIB file', 1)
         for horizon in range(0, t):
             self.horizon  = horizon
+
+            start_time = time.time()
             formula    = self.encoder.encode(self.horizon)
             context    = self.encoder.ctx
 
+
             if not self.solver:
-                self.solver = z3.Solver(ctx=context) if 'objective' not in formula else z3.Optimize(ctx=context)
+                self.solver = z3.Optimize(ctx=context)
             
             # deal with the initial state
             if self.horizon == 0:
@@ -92,19 +102,29 @@ class OMTSearch(Search):
             
             # deal with the goal state
             g = z3.Bool(f"g{self.horizon}", ctx=context) # Now create a Boolean variable for assuming the goal
-            reified_goal = z3.Implies(g, z3.And(formula['goal']))
+            reified_goal = z3.Implies(g, z3.And(formula['abstract_goal']))
             self.solver.add(reified_goal) # Add the goal
-            del formula['goal']
+            del formula['abstract_goal']
 
+            # deal with abstract formulas 
+            reified_abstract_formulas = z3.Implies(g, z3.And(formula['abstract_actions'],formula['loop_formulas'] ))
+            self.solver.add(reified_abstract_formulas) # Add the abstract transition formulas
+            del formula['abstract_actions']
+            del formula['loop_formulas']
+
+            
             # deal with the objective
             if 'objective' in formula:
                 self.solver.minimize(formula['objective'])
                 del formula['objective']
 
             # We assert the rest of formulas to the solver
-            for _, v in formula.items():
+            for k, v in formula.items():
+                if k == 'goal':
+                    pass
                 if v is not None:
                     self.solver.add(v)
+
 
         end_time = time.time()
         encoding_time = end_time - start_time
