@@ -65,13 +65,13 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     plan = search_strategy(encoder_instance, schedule).search()
     
     if plan is None:
-        log('No solution found')
+        log('No solution found',1)
     elif plan.validate():
-        log('The plan is valid')
+        log('The plan is valid',1)
         log(plan)
         return plan
     else:
-        log('The plan is invalid')
+        log('The plan is invalid',1)
 
     
 
