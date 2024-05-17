@@ -101,13 +101,11 @@ def solve_problem(domain, problem, config):
     """
     plan = solve(domain, problem, config)
 
-    if not plan:
-        print('No solution found')
-    elif plan.validate():
+    if plan is not None:
         print('The plan is valid')
         print(plan)
     else:
-        print('The plan is invalid')
+        print('No valid plan could be found')
 
 def main(args=None):
     """

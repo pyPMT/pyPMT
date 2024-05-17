@@ -15,7 +15,6 @@ class QFUFSearch(Search):
     
     def search(self):
         self.horizon = 0
-        self.solution = SMTSequentialPlan(None, None)
 
         log(f'Starting to solve', 1)
         total_time = 0
