@@ -20,6 +20,15 @@ class SMTSequentialPlan:
         """
         return len(self.plan.actions)
 
+    def __iter__(self):
+        """!
+        Returns the plan's actions iterator.
+
+        @return an iterator of the actions in the plan.
+        """
+
+        return iter(self.plan.actions)
+
     def __str__(self):
         """!
         Returns the plan as a stringin PDDL format.
