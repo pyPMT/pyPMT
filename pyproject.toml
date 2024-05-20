@@ -2,7 +2,7 @@
 name = "pypmt"
 version = "0.1.0"
 description = "A library for planning modulo theories"
-authors = ["Mustafa Faisal mustafa.faisal.eng@gmail.com", "Joan Espasa Arxer jea20@st-andrews.ac.uk", "Francesco Leofante f.leofante@imperial.ac.uk"]
+authors = ["Mustafa Faisal mustafa.faisal.eng@gmail.com"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
