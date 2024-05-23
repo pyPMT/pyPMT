@@ -16,9 +16,13 @@ def run_planner(name, pddldir):
         plan = solve(domainfile, problemfile, name, validate_plan=True)
         tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
 
+    failed_domains = []
     for domainname, (result, validation_fail_reason) in tasks_results.items():
         if not result:
-            pytest.fail(f"{domainname}: plan is invalid due to {validation_fail_reason}")
+            failed_domains.append(f"{domainname}: plan is invalid due to {validation_fail_reason}")
+    
+    if len(failed_domains) > 0:
+        pytest.fail('\n'.join(failed_domains))
 
 def test_planner_seq():
     # First read the planning tasks.
