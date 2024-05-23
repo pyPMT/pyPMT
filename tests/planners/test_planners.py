@@ -11,10 +11,14 @@ from .utilities import read_tasks_files
 
 def run_planner(name, pddldir):
     tasks = read_tasks_files(pddldir)
+    tasks_results = defaultdict(bool)
     for domainname, domainfile, problemfile in tasks:
         plan = solve(domainfile, problemfile, name, validate_plan=True)
-        if not plan.isvalid:
-            pytest.fail(f"Plan is invalid: {plan.validation_fail_reason}")
+        tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
+
+    for domainname, (result, validation_fail_reason) in tasks_results.items():
+        if not result:
+            pytest.fail(f"{domainname}: plan is invalid due to {validation_fail_reason}")
 
 def test_planner_seq():
     # First read the planning tasks.
@@ -30,6 +34,6 @@ def test_planner_r2e():
     run_planner("r2e", pddldir)
 
 # MA342: I'm skipping this one since it fails to solve the plans.
-# def test_planner_qfuf():
-#     pddldir = os.path.join(os.path.dirname(__file__), "pddl")
-#     run_planner("qfuf", pddldir)
+def test_planner_qfuf():
+    pddldir = os.path.join(os.path.dirname(__file__), "pddl")
+    run_planner("qfuf", pddldir)
