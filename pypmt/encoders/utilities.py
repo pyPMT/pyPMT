@@ -26,3 +26,11 @@ def str_repr(f, t=None):
     if t is not None: # and finally the timestep if there is one
         s += f"_{t}"
     return s
+
+@lru_cache()
+def varstr_repr(var):
+    """! 
+    given a z3 variable return the variable name. 
+    """
+    varname = str(var)
+    return varname[:varname.rfind('_')]
