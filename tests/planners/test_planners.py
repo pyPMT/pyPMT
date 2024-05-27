@@ -37,7 +37,6 @@ def test_planner_r2e():
     pddldir = os.path.join(os.path.dirname(__file__), "pddl")
     run_planner("r2e", pddldir)
 
-# MA342: I'm skipping this one since it fails to solve the plans.
 def test_planner_qfuf():
     pddldir = os.path.join(os.path.dirname(__file__), "pddl")
     run_planner("qfuf", pddldir)

@@ -387,7 +387,7 @@ class EncoderSequentialQFUF(Encoder):
         plan = SequentialPlan([])
         if not model: return plan
         ## linearize partial-order plan
-        for step in range(0, horizon):
+        for step in range(0, horizon+1):
             # which action is in step "step?"
             action_selected = model.evaluate(self.z3_action_variable(step))
             up_action = self.up_actions_mapping[action_selected]
