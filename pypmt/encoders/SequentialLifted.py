@@ -501,4 +501,5 @@ class EncoderSequentialLifted(Encoder):
         encoded_formula['frame'] = z3.And(self.encode_frame())
         encoded_formula['typing'] = z3.And(self.formula['typing'])
         self.formula = encoded_formula
+        self.formula_length += 1
         return encoded_formula

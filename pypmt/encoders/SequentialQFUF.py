@@ -426,6 +426,7 @@ class EncoderSequentialQFUF(Encoder):
         encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions)
         encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions)
         encoded_formula['typing']  = self.formula['typing']
+        self.formula_length += 1
         return encoded_formula
 
     def base_encode(self):
