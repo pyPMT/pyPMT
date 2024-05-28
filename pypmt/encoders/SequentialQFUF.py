@@ -326,8 +326,11 @@ class EncoderSequentialQFUF(Encoder):
 
             # for an action to be executable, it needs to be selected
             # and the types need to be correct
-            action = z3.Implies(z3.And([action_matches]), 
-                                z3.And([action_typing, action_pre, action_eff]))
+            if all(len(action.children()) == 0 for action in [action_typing, action_pre, action_eff]):
+                action = z3.Implies(action_matches, z3.BoolVal(True, ctx=self.ctx))
+            else:
+                action = z3.Implies(z3.And([action_matches]), 
+                                    z3.And([action_typing, action_pre, action_eff]))
             actions.append(action)
         return z3.And(actions)
 
