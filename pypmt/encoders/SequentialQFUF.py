@@ -440,6 +440,7 @@ class EncoderSequentialQFUF(Encoder):
         self.formula['actions'] = z3.And(self.encode_actions())  # Encode universal axioms
         self.formula['frame']   = z3.And(self.encode_frame())  # Encode explanatory frame axioms
         self.formula['typing']  = z3.And(self.formula['typing'])  # Encode explanatory frame axioms
+        self.formula_length += 1 # increment the formula length.
 
     # TODO abstract this away in utilities.py
     def _expr_to_z3(self, expr, t, ctx=None):
