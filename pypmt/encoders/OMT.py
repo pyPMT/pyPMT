@@ -96,7 +96,8 @@ class EncoderOMT(EncoderGrounded):
         encoded_formula['abstract_goal']       = substitute(self.formula['abstract_goal'], list_substitutions)
         encoded_formula['loop_formulas']       = substitute(self.formula['loop_formulas'], list_substitutions)
 
-        encoded_formula['objective']       = self.encode_objective()
+        # TODO: this will probably have be adapted, depending on whether a metric is provided in the PDDL or not.
+        encoded_formula['objective']       = self.formula['objective']
 
 
         return encoded_formula
@@ -122,6 +123,9 @@ class EncoderOMT(EncoderGrounded):
         self.formula['abstract_actions'] = z3.And(self.encode_abstract_actions(0)) # Encode relaxed universal axioms
         self.formula['abstract_goal']    = z3.And(self.encode_abstract_goal_state(0))  # Encode abstract goal state axioms
         self.formula['loop_formulas']    = z3.And(self.encode_loop_formulas(0)) # Encode loop formula
+
+        # Objective
+        self.formula['objective'] = self.encode_objective()
        
      
     def _free_to_abs_variables(self,formula,t):
@@ -307,7 +311,7 @@ class EncoderOMT(EncoderGrounded):
 
                 for a in self.up_actions_to_z3[key]:
                     objective.append(z3.If(a,1.0,0.0))
-                
+        
         return sum(objective)
 
    
