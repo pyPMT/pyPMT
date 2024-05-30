@@ -54,7 +54,7 @@ class OMTSearch(Search):
             # We assert the rest of formulas to the solver
             for k, v in formula.items():
                 if k == 'goal':
-                    pass
+                    continue
                 if v is not None:
                     self.solver.add(v)
 
@@ -86,8 +86,6 @@ class OMTSearch(Search):
         log(f'Encoding problem into a SMTLIB file', 1)
         for horizon in range(0, t):
             self.horizon  = horizon
-
-            start_time = time.time()
             formula    = self.encoder.encode(self.horizon)
             context    = self.encoder.ctx
 
@@ -112,7 +110,6 @@ class OMTSearch(Search):
             del formula['abstract_actions']
             del formula['loop_formulas']
 
-            
             # deal with the objective
             if 'objective' in formula:
                 self.solver.minimize(formula['objective'])
@@ -121,7 +118,7 @@ class OMTSearch(Search):
             # We assert the rest of formulas to the solver
             for k, v in formula.items():
                 if k == 'goal':
-                    pass
+                    continue
                 if v is not None:
                     self.solver.add(v)
 
@@ -129,5 +126,5 @@ class OMTSearch(Search):
         end_time = time.time()
         encoding_time = end_time - start_time
         self.solver.add(g) # we assert the goal happens in the last step (which would normally be an assumption)
-        dumpProblem(self.solver, path, add_check_sat=True)
+        dumpProblem(self.solver, path, add_check_sat=False)
         log(f'Encoding the formula took: {encoding_time:.2f}s', 2)
