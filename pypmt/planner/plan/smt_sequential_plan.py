@@ -11,6 +11,7 @@ class SMTSequentialPlan:
         self.validation_fail_reason = None
         self.plan = plan
         self.task = task
+        self._plan_str = None
 
     def __len__(self):
         """!
@@ -35,7 +36,15 @@ class SMTSequentialPlan:
 
         @return the plan as a string.
         """
-        return PDDLWriter(self.task).get_plan(self.plan)
+        if self._plan_str is None:
+            self._plan_str = PDDLWriter(self.task).get_plan(self.plan)
+        return self._plan_str
+    
+    def __hash__(self) -> int:
+        return hash(str(self))
+    
+    def __eq__(self, value) -> bool:
+        return self.__hash__() == value.__hash__()
 
     def cost(self):
         """!
