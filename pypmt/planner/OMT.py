@@ -68,16 +68,13 @@ class OMTSearch(Search):
             total_time = total_time + solving_time + encoding_time
             log(f'Step {horizon+1}/{(self.scheduler[-1]+1)} encoding: {encoding_time:.2f}s, solving: {solving_time:.2f}s', 2)
             if res == z3.sat:
-                print("sat")
                 model = self.solver.model()
                 if model.eval(formula['goal']):
                     log(f'Satisfiable model found. Took:{total_time:.2f}s', 3)
                     log(f'Z3 statistics:\n{self.solver.statistics()}', 4)
                     self.solution = self.encoder.extract_plan(self.solver.model(), self.horizon)
                     break
-                else:
-                    print("not optimal")
-
+                
         return self.solution
 
     def dump_smtlib_to_file(self, t, path):
