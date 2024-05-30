@@ -17,6 +17,9 @@ from pypmt.shared.valid_configs import valid_configs
 
 from pypmt.config import config
 
+from pypmt.utilities import log
+
+
 def create_encoder(encoder:Encoder, domainfile:str, problemfile:str):
     task = PDDLReader().parse_problem(domainfile, problemfile)
     return encoder(task)
@@ -62,8 +65,21 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     # search
     search_strategy = config.get("search")
     plan = search_strategy(encoder_instance, schedule).search()
-    if validate_plan: plan.validate()
-    return plan
+
+    # validate plan if there is a plan and we're asked to
+    if plan and validate_plan:
+        plan.validate()
+    
+    if plan is None:
+        log('No solution found', 1)
+        return None
+    elif plan.isvalid:
+        log('The plan is valid', 1)
+        log(plan, 1)
+        return plan
+    else:
+        log('The plan is invalid!', 1)
+        return None
 
 def dump_smtlib(domainfile:str, problemfile:str, path:str, bound=None, config_name=None):
     """!
