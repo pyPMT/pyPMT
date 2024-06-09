@@ -11,7 +11,7 @@ from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
 from pypmt.encoders.base import Encoder
-from pypmt.encoders.utilities import str_repr
+from pypmt.encoders.utilities import str_repr, remove_delete_then_set
 from pypmt.modifiers.modifierLinear import LinearModifier
 from pypmt.modifiers.modifierParallel import ParallelModifier
 
@@ -270,6 +270,8 @@ class EncoderGrounded(Encoder):
             action_eff = []
             for eff in grounded_action.effects:
                action_eff.append(self._expr_to_z3(eff, t))
+            # remove any delete-then-set/set-then-delete semantics
+            action_eff = remove_delete_then_set(action_eff)
 
             # the proper encoding
             action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)

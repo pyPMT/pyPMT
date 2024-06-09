@@ -1,4 +1,3 @@
-from collections import Counter
 import z3
 
 from collections import defaultdict
@@ -10,6 +9,7 @@ from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind
 from unified_planning.shortcuts import Compiler, CompilationKind
 
 from pypmt.utilities import timethis, log
+from pypmt.encoders.utilities import remove_delete_then_set
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 from pypmt.encoders.base import Encoder
 
@@ -79,20 +79,6 @@ class EncoderSequentialQFUF(Encoder):
     
     def __len__(self):
         return self.formula_length
-    
-    def _remove_delete_then_set(self, effects):
-        """!
-        Removes delete-then-set effects from the list of effects.
-        @param effects: list of effects
-        @return list of effects without delete-then-set effects
-        """
-        # collect boolean only effect fluents
-        collected_effect_fluents = filter(lambda f:isinstance(f.sort(), z3.z3.BoolSortRef), [e.children()[0] for e in effects])
-        # keep fluents with more than one appearance
-        deleted_then_set_fluents = list(map(lambda x:x[0], filter(lambda item: item[1] != 1, Counter(collected_effect_fluents).items())))
-        # remove delete-then-set effects
-        return list(filter(lambda e: not e.children()[0] in deleted_then_set_fluents, effects))
-
 
     def _populate_modifiers(self):
         """!
@@ -336,7 +322,7 @@ class EncoderSequentialQFUF(Encoder):
             for eff in up_action.effects:
                action_eff.append(self._expr_to_z3(eff, t, ctx=ctx))
             # remove any delete-then-set/set-then-delete semantics
-            action_eff = z3.And(self._remove_delete_then_set(action_eff))
+            action_eff = z3.And(remove_delete_then_set(action_eff))
 
             # for an action to be executable, it needs to be selected
             # and the types need to be correct
