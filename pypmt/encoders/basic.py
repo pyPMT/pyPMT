@@ -358,6 +358,8 @@ class EncoderGrounded(Encoder):
                 return self._expr_to_z3(expr.args[0], t, c) <= self._expr_to_z3(expr.args[1], t, c)
             elif expr.is_times():
                 return self._expr_to_z3(expr.args[0], t, c) * self._expr_to_z3(expr.args[1], t, c)
+            elif expr.is_div():
+                return self._expr_to_z3(expr.args[0], t, c) / self._expr_to_z3(expr.args[1], t, c)
             elif expr.is_plus():
                 return z3.Sum([self._expr_to_z3(x, t, c) for x in expr.args])
             elif expr.is_minus():
@@ -366,6 +368,8 @@ class EncoderGrounded(Encoder):
                 return z3.Not(self._expr_to_z3(expr.args[0], t, c))
             elif expr.is_equals():
                 return self._expr_to_z3(expr.args[0], t, c) == self._expr_to_z3(expr.args[1], t, c)
+            elif expr.is_implies():
+                return z3.Implies(self._expr_to_z3(expr.args[0], t, c), self._expr_to_z3(expr.args[1], t, c))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:
