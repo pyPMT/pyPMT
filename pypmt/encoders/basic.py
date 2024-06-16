@@ -227,7 +227,7 @@ class EncoderGrounded(Encoder):
         """
         t = 0
         initial = []
-        for FNode, initial_value in self.task.initial_values.items():
+        for FNode, initial_value in self.ground_problem.initial_values.items():
             fluent = self._expr_to_z3(FNode, t)
             value  = self._expr_to_z3(initial_value, t)
             initial.append(fluent == value)
@@ -243,7 +243,7 @@ class EncoderGrounded(Encoder):
         @returns: Z3 formula asserting propositional and numeric subgoals
         """
         goal = []
-        for goal_pred in self.task.goals:
+        for goal_pred in self.ground_problem.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
         return goal
 

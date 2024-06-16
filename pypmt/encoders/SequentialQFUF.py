@@ -250,7 +250,7 @@ class EncoderSequentialQFUF(Encoder):
         """
         t = 0
         initial = []
-        for FNode, initial_value in self.task.initial_values.items():
+        for FNode, initial_value in self.ground_problem.initial_values.items():
             name = FNode.fluent().name # we translate the FNode to a Fluent and get its name
             parameters = [] # now we translate the parameters to Z3 objects
             for arg in FNode.args:
@@ -273,7 +273,7 @@ class EncoderSequentialQFUF(Encoder):
         """
         t =  self.z3_timestep_var
         goal = []
-        for goal_pred in self.task.goals:
+        for goal_pred in self.ground_problem.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
         #print(f"goal: {goal}")
         return goal
