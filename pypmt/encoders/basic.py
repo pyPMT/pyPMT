@@ -89,13 +89,17 @@ class EncoderGrounded(Encoder):
         compiler and then grounds the problem using an available UP grounder
         """
         with Compiler(problem_kind = self.task.kind, 
-                      compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
+            compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
             qr_result  = quantifiers_remover.compile(self.task, CompilationKind.QUANTIFIERS_REMOVING)
 
         with Compiler(problem_kind = qr_result.problem.kind, 
-                      compilation_kind = CompilationKind.GROUNDING) as grounder:
-            gr_result = grounder.compile(qr_result.problem, CompilationKind.GROUNDING)
-        return (qr_result, gr_result)
+            compilation_kind = CompilationKind.CONDITIONAL_EFFECTS_REMOVING) as grounder:
+            cer_result = grounder.compile(qr_result.problem, CompilationKind.CONDITIONAL_EFFECTS_REMOVING)
+
+        with Compiler(problem_kind = cer_result.problem.kind, 
+            compilation_kind = CompilationKind.GROUNDING) as grounder:
+            gr_result = grounder.compile(cer_result.problem, CompilationKind.GROUNDING)
+        return (qr_result, cer_result, gr_result)
         
     def _populate_modifiers(self):
         """!
