@@ -113,7 +113,7 @@ class SMTSequentialPlan:
             return None
         if self.isvalid is not None: return self.isvalid
         
-        with PlanValidator() as validator:
+        with PlanValidator(name='sequential_plan_validator') as validator:
             validationresult = validator.validate(self.task, self.plan)
         self.validation_fail_reason = validationresult.reason
         self.isvalid = validationresult.status.value == 1 if validationresult else False
