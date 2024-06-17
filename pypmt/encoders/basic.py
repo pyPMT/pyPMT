@@ -86,16 +86,21 @@ class EncoderGrounded(Encoder):
     def _ground(self):
         """! 
         Removes quantifiers from the UP problem via the QUANTIFIERS_REMOVING 
-        compiler and then grounds the problem using an available UP grounder
+        compiler, implies keyword via DISJUNCTIVE_CONDITIONS_REMOVING compiler and then grounds the problem using an available UP grounder
         """
         with Compiler(problem_kind = self.task.kind, 
-                      compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
+            compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
             qr_result  = quantifiers_remover.compile(self.task, CompilationKind.QUANTIFIERS_REMOVING)
 
         with Compiler(problem_kind = qr_result.problem.kind, 
-                      compilation_kind = CompilationKind.GROUNDING) as grounder:
-            gr_result = grounder.compile(qr_result.problem, CompilationKind.GROUNDING)
-        return (qr_result, gr_result)
+            compilation_kind = CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING) as quantifiers_remover:
+            dcr_result  = quantifiers_remover.compile(qr_result.problem, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING)
+
+        with Compiler(problem_kind = dcr_result.problem.kind, 
+            compilation_kind = CompilationKind.GROUNDING) as grounder:
+            gr_result = grounder.compile(dcr_result.problem, CompilationKind.GROUNDING)
+
+        return (qr_result, dcr_result, gr_result)
         
     def _populate_modifiers(self):
         """!
