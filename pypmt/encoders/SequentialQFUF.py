@@ -27,6 +27,7 @@ class EncoderSequentialQFUF(Encoder):
     def __init__(self, task):
         self.name = "qfuf"
         self.task = task # The UP problem
+        assert len(self.task.all_objects) > 0, "problem fully grounded, please use a different encoder"
         self.ctx = z3.Context() # The context where we will store the problem
 
         # needed for the frame
