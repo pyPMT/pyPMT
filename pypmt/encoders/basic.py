@@ -11,7 +11,7 @@ from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
 from pypmt.encoders.base import Encoder
-from pypmt.encoders.utilities import str_repr
+from pypmt.encoders.utilities import str_repr, remove_delete_then_set
 from pypmt.modifiers.modifierLinear import LinearModifier
 from pypmt.modifiers.modifierParallel import ParallelModifier
 
@@ -86,16 +86,21 @@ class EncoderGrounded(Encoder):
     def _ground(self):
         """! 
         Removes quantifiers from the UP problem via the QUANTIFIERS_REMOVING 
-        compiler and then grounds the problem using an available UP grounder
+        compiler, implies keyword via DISJUNCTIVE_CONDITIONS_REMOVING compiler and then grounds the problem using an available UP grounder
         """
         with Compiler(problem_kind = self.task.kind, 
-                      compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
+            compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
             qr_result  = quantifiers_remover.compile(self.task, CompilationKind.QUANTIFIERS_REMOVING)
 
         with Compiler(problem_kind = qr_result.problem.kind, 
-                      compilation_kind = CompilationKind.GROUNDING) as grounder:
-            gr_result = grounder.compile(qr_result.problem, CompilationKind.GROUNDING)
-        return (qr_result, gr_result)
+            compilation_kind = CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING) as quantifiers_remover:
+            dcr_result  = quantifiers_remover.compile(qr_result.problem, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING)
+
+        with Compiler(problem_kind = dcr_result.problem.kind, 
+            compilation_kind = CompilationKind.GROUNDING) as grounder:
+            gr_result = grounder.compile(dcr_result.problem, CompilationKind.GROUNDING)
+
+        return (qr_result, dcr_result, gr_result)
         
     def _populate_modifiers(self):
         """!
@@ -228,7 +233,7 @@ class EncoderGrounded(Encoder):
         """
         t = 0
         initial = []
-        for FNode, initial_value in self.task.initial_values.items():
+        for FNode, initial_value in self.ground_problem.initial_values.items():
             fluent = self._expr_to_z3(FNode, t)
             value  = self._expr_to_z3(initial_value, t)
             initial.append(fluent == value)
@@ -244,7 +249,7 @@ class EncoderGrounded(Encoder):
         @returns: Z3 formula asserting propositional and numeric subgoals
         """
         goal = []
-        for goal_pred in self.task.goals:
+        for goal_pred in self.ground_problem.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
         return goal
 
@@ -271,6 +276,8 @@ class EncoderGrounded(Encoder):
             action_eff = []
             for eff in grounded_action.effects:
                action_eff.append(self._expr_to_z3(eff, t))
+            # remove any delete-then-set/set-then-delete semantics
+            action_eff = remove_delete_then_set(action_eff)
 
             # the proper encoding
             action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)
@@ -357,6 +364,8 @@ class EncoderGrounded(Encoder):
                 return self._expr_to_z3(expr.args[0], t, c) <= self._expr_to_z3(expr.args[1], t, c)
             elif expr.is_times():
                 return self._expr_to_z3(expr.args[0], t, c) * self._expr_to_z3(expr.args[1], t, c)
+            elif expr.is_div():
+                return self._expr_to_z3(expr.args[0], t, c) / self._expr_to_z3(expr.args[1], t, c)
             elif expr.is_plus():
                 return z3.Sum([self._expr_to_z3(x, t, c) for x in expr.args])
             elif expr.is_minus():
@@ -365,6 +374,8 @@ class EncoderGrounded(Encoder):
                 return z3.Not(self._expr_to_z3(expr.args[0], t, c))
             elif expr.is_equals():
                 return self._expr_to_z3(expr.args[0], t, c) == self._expr_to_z3(expr.args[1], t, c)
+            elif expr.is_implies():
+                return z3.Implies(self._expr_to_z3(expr.args[0], t, c), self._expr_to_z3(expr.args[1], t, c))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:

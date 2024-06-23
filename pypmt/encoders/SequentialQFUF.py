@@ -1,4 +1,3 @@
-from copy import deepcopy
 import z3
 
 from collections import defaultdict
@@ -10,6 +9,7 @@ from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind
 from unified_planning.shortcuts import Compiler, CompilationKind
 
 from pypmt.utilities import timethis, log
+from pypmt.encoders.utilities import remove_delete_then_set
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 from pypmt.encoders.base import Encoder
 
@@ -79,7 +79,6 @@ class EncoderSequentialQFUF(Encoder):
     
     def __len__(self):
         return self.formula_length
-
 
     def _populate_modifiers(self):
         """!
@@ -251,7 +250,7 @@ class EncoderSequentialQFUF(Encoder):
         """
         t = 0
         initial = []
-        for FNode, initial_value in self.task.initial_values.items():
+        for FNode, initial_value in self.ground_problem.initial_values.items():
             name = FNode.fluent().name # we translate the FNode to a Fluent and get its name
             parameters = [] # now we translate the parameters to Z3 objects
             for arg in FNode.args:
@@ -274,7 +273,7 @@ class EncoderSequentialQFUF(Encoder):
         """
         t =  self.z3_timestep_var
         goal = []
-        for goal_pred in self.task.goals:
+        for goal_pred in self.ground_problem.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
         #print(f"goal: {goal}")
         return goal
@@ -322,12 +321,16 @@ class EncoderSequentialQFUF(Encoder):
             action_eff = []
             for eff in up_action.effects:
                action_eff.append(self._expr_to_z3(eff, t, ctx=ctx))
-            action_eff = z3.And(action_eff)
+            # remove any delete-then-set/set-then-delete semantics
+            action_eff = z3.And(remove_delete_then_set(action_eff))
 
             # for an action to be executable, it needs to be selected
             # and the types need to be correct
-            action = z3.Implies(z3.And([action_matches]), 
-                                z3.And([action_typing, action_pre, action_eff]))
+            if any(len(action.children()) == 0 for action in [action_typing, action_pre, action_eff]):
+                action = z3.Implies(action_matches, z3.BoolVal(True, ctx=self.ctx))
+            else:
+                action = z3.Implies(z3.And([action_matches]), 
+                                    z3.And([action_typing, action_pre, action_eff]))
             actions.append(action)
         return z3.And(actions)
 
@@ -423,6 +426,7 @@ class EncoderSequentialQFUF(Encoder):
         encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions)
         encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions)
         encoded_formula['typing']  = self.formula['typing']
+        self.formula_length += 1
         return encoded_formula
 
     def base_encode(self):
@@ -436,6 +440,7 @@ class EncoderSequentialQFUF(Encoder):
         self.formula['actions'] = z3.And(self.encode_actions())  # Encode universal axioms
         self.formula['frame']   = z3.And(self.encode_frame())  # Encode explanatory frame axioms
         self.formula['typing']  = z3.And(self.formula['typing'])  # Encode explanatory frame axioms
+        self.formula_length += 1 # increment the formula length.
 
     # TODO abstract this away in utilities.py
     def _expr_to_z3(self, expr, t, ctx=None):
@@ -488,6 +493,8 @@ class EncoderSequentialQFUF(Encoder):
                 return self._expr_to_z3(expr.args[0], t, ctx) <= self._expr_to_z3(expr.args[1], t, ctx)
             elif expr.is_times():
                 return self._expr_to_z3(expr.args[0], t, ctx) * self._expr_to_z3(expr.args[1], t, ctx)
+            elif expr.is_div():
+                return self._expr_to_z3(expr.args[0], t, ctx) / self._expr_to_z3(expr.args[1], t, ctx)
             elif expr.is_plus():
                 return z3.Sum([self._expr_to_z3(x, t, ctx) for x in expr.args])
             elif expr.is_minus():
@@ -496,6 +503,8 @@ class EncoderSequentialQFUF(Encoder):
                 return z3.Not(self._expr_to_z3(expr.args[0], t, ctx))
             elif expr.is_equals():
                 return self._expr_to_z3(expr.args[0], t, ctx) == self._expr_to_z3(expr.args[1], t, ctx)
+            elif expr.is_implies():
+                return z3.Implies(self._expr_to_z3(expr.args[0], t, ctx), self._expr_to_z3(expr.args[1], t, ctx))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:
