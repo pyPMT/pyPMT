@@ -144,25 +144,26 @@ class EncoderGrounded(Encoder):
         
         self.create_variables(t+1) # we create another layer
 
-        list_substitutions = [] # list of pairs (from,to)
+        list_substitutions_actions = []
+        list_substitutions_fluents = []
         for key in self.up_actions_to_z3.keys():
-            list_substitutions.append(
+            list_substitutions_actions.append(
                 (self.up_actions_to_z3[key][0],
                  self.up_actions_to_z3[key][t]))
         for key in self.up_fluent_to_z3.keys():
-            list_substitutions.append(
+            list_substitutions_fluents.append(
                 (self.up_fluent_to_z3[key][0],
                  self.up_fluent_to_z3[key][t]))
-            list_substitutions.append(
+            list_substitutions_fluents.append(
                 (self.up_fluent_to_z3[key][1],
                  self.up_fluent_to_z3[key][t + 1]))
  
         encoded_formula = dict()
-        encoded_formula['initial'] = self.formula['initial'] # TODO not needed?
-        encoded_formula['goal']    = z3.substitute(self.formula['goal'], list_substitutions)
-        encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions)
-        encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions)
-        encoded_formula['sem']     = z3.substitute(self.formula['sem'], list_substitutions)
+        encoded_formula['initial'] = self.formula['initial']
+        encoded_formula['goal']    = z3.substitute(self.formula['goal'], list_substitutions_fluents)
+        encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions_fluents + list_substitutions_actions)
+        encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions_fluents + list_substitutions_actions)
+        encoded_formula['sem']     = z3.substitute(self.formula['sem'], list_substitutions_actions)
         return encoded_formula
 
     def base_encode(self):
