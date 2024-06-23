@@ -1,5 +1,6 @@
 import unified_planning as up
 from unified_planning.io import PDDLReader
+from unified_planning.shortcuts import Compiler, CompilationKind
 
 from pypmt.encoders.R2E import EncoderRelaxed2Exists
 from pypmt.encoders.basic import EncoderForall, EncoderSequential
@@ -19,9 +20,19 @@ from pypmt.config import config
 from pypmt.utilities import log
 
 
-def create_encoder(encoder:Encoder, domainfile:str, problemfile:str):
+def create_encoder(encoder:Encoder, compilation_seq, domainfile:str, problemfile:str):
     task = PDDLReader().parse_problem(domainfile, problemfile)
-    return encoder(task)
+
+    compiled_tasks = [task]
+    for name, compilation_kind in compilation_seq:
+        args = {}
+        if name: args['name'] = name
+        args['compilation_kind'] = compilation_kind
+        _task = compiled_tasks[-1] if 'kind' in dir(compiled_tasks[-1]) else compiled_tasks[-1].problem
+        with Compiler(**args, problem_kind = _task.kind) as compiler:
+            compiled_tasks.append(compiler.compile(_task, compilation_kind))
+
+    return encoder(compiled_tasks)
 
 def generate_schedule():
     encoder = config.get("encoder")
@@ -38,7 +49,7 @@ def generate_schedule_for(encoder, upperbound):
         raise Exception(f"Unknown encoder {encoder}")
     return schedule
 
-def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True):
+def solve(domainfile:str, problemfile:str, config_name=None, compilation_seq=[], validate_plan=True):
     """!
     Basic entry point to start searching
     Beforehand the config has to be set by doing for example:
@@ -49,7 +60,14 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
 
     or passing them as parameters:
     from pypmt.apis import solve
-    solve(domainfile, problemfile, "qfuf") 
+
+    # compilation_seq is a list of tuples where the first element is the name of the compilation 
+    # and the second element is the kind of compilation.
+
+    compilation_seq = [('up_grounder', CompilationKind.GROUNDING), 
+                       (None, CompilationKind.QUANTIFIERS_REMOVING)]
+
+    solve(domainfile, problemfile, "qfuf", compilation_seq) 
     """
     if config_name is not None:
         config.set("encoder", valid_configs[config_name][0])
@@ -58,14 +76,14 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     encoder = config.get("encoder")
     assert encoder is not None, "Encoder not set"
     schedule = generate_schedule()
-    encoder_instance = create_encoder(encoder, domainfile, problemfile)
+    encoder_instance = create_encoder(encoder, compilation_seq, domainfile, problemfile)
 
     # search
     search_strategy = config.get("search")
     plan = search_strategy(encoder_instance, schedule).search()
     
     # validate plan if there is a plan and we're asked to
-    if plan and validate_plan:
+    if validate_plan and plan:
         plan.validate()
     
     if plan is None:

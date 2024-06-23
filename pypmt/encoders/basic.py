@@ -33,13 +33,13 @@ class EncoderGrounded(Encoder):
         planning of the original work in Kautz & Selman 1996 
     """
 
-    def __init__(self, name, task, modifier):
-        self.task = task # The UP problem
+    def __init__(self, name, compiled_tasks, modifier):
+        self.task = compiled_tasks[0] # The UP problem
         self.name = name
         self.modifier = modifier
         self.ctx = z3.Context() # The context where we will store the problem
 
-        self.compilation_results = self._ground() # store the compilation results
+        self.compilation_results = compiled_tasks[1:]
         self.grounding_results   = self.compilation_results[-1] # store the grounded UP results
         self.ground_problem      = self.grounding_results.problem  # The grounded UP problem
 
@@ -80,28 +80,7 @@ class EncoderGrounded(Encoder):
         @returns: the corresponding Z3 variable
         """
         return self.up_actions_to_z3[name][t]
-
-    # TODO: should we consider fixing the grounder to use? Now this would
-    # depend on the installation of UP and what is available.
-    def _ground(self):
-        """! 
-        Removes quantifiers from the UP problem via the QUANTIFIERS_REMOVING 
-        compiler, implies keyword via DISJUNCTIVE_CONDITIONS_REMOVING compiler and then grounds the problem using an available UP grounder
-        """
-        with Compiler(problem_kind = self.task.kind, 
-            compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
-            qr_result  = quantifiers_remover.compile(self.task, CompilationKind.QUANTIFIERS_REMOVING)
-
-        with Compiler(problem_kind = qr_result.problem.kind, 
-            compilation_kind = CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING) as quantifiers_remover:
-            dcr_result  = quantifiers_remover.compile(qr_result.problem, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING)
-
-        with Compiler(problem_kind = dcr_result.problem.kind, 
-            compilation_kind = CompilationKind.GROUNDING) as grounder:
-            gr_result = grounder.compile(dcr_result.problem, CompilationKind.GROUNDING)
-
-        return (qr_result, dcr_result, gr_result)
-        
+    
     def _populate_modifiers(self):
         """!
         Populates an index on which grounded actions can modify which fluents. 
@@ -386,8 +365,8 @@ class EncoderSequential(EncoderGrounded):
     Implementation of the classical sequential encoding of Kautz & Selman 1992
     where each timestep can have exactly one action.
     """
-    def __init__(self, task):
-        super().__init__("seq", task, LinearModifier())
+    def __init__(self, compiled_tasks):
+        super().__init__("seq", compiled_tasks, LinearModifier())
 
 
 class EncoderForall(EncoderGrounded):
@@ -395,5 +374,5 @@ class EncoderForall(EncoderGrounded):
     Implementation of a generalisation for numeric planning of the original work
     in Kautz & Selman 1996 
     """
-    def __init__(self, task):
-        super().__init__("seqForall", task, ParallelModifier())
+    def __init__(self, compiled_tasks):
+        super().__init__("seqForall", compiled_tasks, ParallelModifier())

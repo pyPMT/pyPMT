@@ -26,7 +26,7 @@ class EncoderSequentialQFUF(Encoder):
     # TODO: Check the fluents that are static and do not add a timestep parameter to it
     def __init__(self, task):
         self.name = "qfuf"
-        self.task = task # The UP problem
+        self.task = task[0] # The UP problem
         self.ctx = z3.Context() # The context where we will store the problem
 
         # needed for the frame
