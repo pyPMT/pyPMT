@@ -97,6 +97,12 @@ class EncoderSequentialQFUF(Encoder):
         # ...
         #     'total-fuel-used': [{'fly-slow': []},
         #                         {'fly-fast': []}],
+        #
+        # That is: {'located': [{'board': [(0, 0), (1, 2)] ....
+        # means that the located fluent with two parameters, is modified by the
+        # board action. The first parameter of located (0) corresponds to the first of board (0),
+        # while the second (1) corresponds to the third parameter of board (2). If there is a 
+        # string there such as "plane1" means that was a constant parameter in the action.
         def param_to_str(p):
             if isinstance(p, Parameter):
                 return p.name
@@ -121,12 +127,17 @@ class EncoderSequentialQFUF(Encoder):
                 # fluents that have no parameters. i.e., that are one variable
                 fluent_modification[action.name] = []
                 for idx_fluent_arg, fluent_arg in enumerate(effect.fluent.args):
-                    # convert current arg of the fluent to str
                     fluent_arg_str = param_to_str(fluent_arg)
-                    # and we look at which position it correspond on the action
-                    idx_action_arg = action_str_parameters.index(fluent_arg_str)
-                    # and we store it
-                    fluent_modification[action.name].append((idx_fluent_arg, idx_action_arg))
+                    # if we have an object (partially instantiated action or a PDDL constant)
+                    # we can continue on the next iteration as this does not need a matching. 
+                    if fluent_arg.is_object_exp():
+                        fluent_modification[action.name].append((idx_fluent_arg, fluent_arg_str))
+                    elif fluent_arg.is_parameter_exp():
+                        # convert current arg of the fluent to str
+                        # and we look at which position it correspond on the action
+                        idx_action_arg = action_str_parameters.index(fluent_arg_str)
+                        # and we store it
+                        fluent_modification[action.name].append((idx_fluent_arg, idx_action_arg))
                 # when we have gathered all the mappings for the current fluent's appearance
                 # we store that into the global index.
                 self.frame_idx[fluent_name].append(fluent_modification)
@@ -362,13 +373,24 @@ class EncoderSequentialQFUF(Encoder):
                     z3_action_object = self.z3_actions_mapping[self.task.action(action_name)]
                     and_pairing = [ self.z3_action_variable(t) == z3_action_object ] # and its parameter pairing
 
+                    add = True
                     # and matching of the action parameters to the fluent parameters
                     for pairing in parameter_pairings:
                         idx_fluent = pairing[0]
                         idx_action = pairing[1]
-                        and_pairing.append(self.z3_action_parameters[idx_action](t) == fluent_vars[idx_fluent])
-                    or_actions.append(z3.And(and_pairing))
-
+                        if isinstance(pairing[1],int): 
+                            # if our "action" index is an integer, then that is a proper action parameter
+                            and_pairing.append(
+                                self.z3_action_parameters[idx_action](t) == fluent_vars[idx_fluent])
+                        elif idx_action.type:
+                            # if our "action" index has a type, one of the parameters of the fluent is a constant
+                            if idx_action != grounded_fluent.args[idx_fluent].object(): #fluent_vars[idx_fluent]:
+                                add = False
+                        else:
+                            raise TypeError("Don't know what this is ...")
+                    if add:
+                        or_actions.append(z3.And(and_pairing))
+            #print(f"fluent {grounded_fluent} can be changed by: {or_actions}")
             # simplify the list in case its empty
             if len(or_actions) == 0:
                 who_can_change_fluent = z3.BoolVal(False, ctx=self.ctx)
