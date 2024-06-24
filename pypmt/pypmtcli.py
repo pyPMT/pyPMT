@@ -47,6 +47,8 @@ def create_parser():
     parser.add_argument('--r2e', action='store_true', help='Use the R2E encoding.')
     parser.add_argument('--uf', action='store_true',  help='Use the lifted encoding with quantifiers.')
     parser.add_argument('--qfuf', action='store_true',  help='Use the quantifier-free lifted encoding.')
+    parser.add_argument('--omtseq', action='store_true',  help='Use the sequential OMT encoding.')
+
 
     parser.add_argument('--dump', type=str, help='Instead of searching, dump the encoding to the specified file. You will want to specify the --bound parameter to set up the number of layers.')
 
@@ -83,6 +85,8 @@ def process_arguments(args):
         configuration = "uf"
     elif args.qfuf:
         configuration = "qfuf"
+    elif args.omtseq:
+        configuration = "omtseq"
     else:
         raise argparse.ArgumentError("No encoding specified!")
 

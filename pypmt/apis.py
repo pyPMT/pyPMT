@@ -7,6 +7,7 @@ from pypmt.encoders.basic import EncoderForall, EncoderSequential
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
+from pypmt.encoders.OMT import EncoderSequentialOMT
 
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.lifted import LiftedSearch
@@ -32,7 +33,8 @@ def generate_schedule_for(encoder, upperbound):
     schedule = None
     # encode
     if encoder in [EncoderSequentialLifted, EncoderSequentialQFUF, \
-                    EncoderSequential, EncoderForall, EncoderRelaxed2Exists]:
+                    EncoderSequential, EncoderForall, EncoderRelaxed2Exists,\
+                    EncoderSequentialOMT]:
         schedule = list(range(0, upperbound))
     else:
         raise Exception(f"Unknown encoder {encoder}")
@@ -63,7 +65,6 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     # search
     search_strategy = config.get("search")
     plan = search_strategy(encoder_instance, schedule).search()
-    
     # validate plan if there is a plan and we're asked to
     if plan and validate_plan:
         plan.validate()
@@ -78,7 +79,6 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     else:
         log('The plan is invalid!', 1)
         return None
-    
 
 def dump_smtlib(domainfile:str, problemfile:str, path:str, bound=None, config_name=None):
     """!

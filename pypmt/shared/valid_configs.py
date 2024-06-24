@@ -2,10 +2,12 @@ from pypmt.encoders.R2E import EncoderRelaxed2Exists
 from pypmt.encoders.basic import EncoderForall, EncoderSequential
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
+from pypmt.encoders.OMT import EncoderSequentialOMT
 
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.lifted import LiftedSearch
 from pypmt.planner.QFUF import QFUFSearch
+from pypmt.planner.OMT import OMTSearch
 
 # valid configs that the library is able to operate with
 valid_configs = {
@@ -14,4 +16,6 @@ valid_configs = {
     "r2e":     (EncoderRelaxed2Exists, SMTSearch),
     "uf":      (EncoderSequentialLifted, LiftedSearch), # TODO: has to be tested and too slow
     "qfuf":    (EncoderSequentialQFUF, QFUFSearch),
+    "omtseq":   (EncoderSequentialOMT, OMTSearch),
+
 }
