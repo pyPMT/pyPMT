@@ -393,6 +393,8 @@ class EncoderRelaxed2Exists(EncoderGrounded):
                 return self._expr_to_z3(expr.args[0], t, c) - self._expr_to_z3(expr.args[1], t, c)
             elif expr.is_not():
                 return z3.Not(self._expr_to_z3(expr.args[0], t, c))
+            elif expr.is_equals():
+                return self._expr_to_z3(expr.args[0], t, c) == self._expr_to_z3(expr.args[1], t, c)
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:

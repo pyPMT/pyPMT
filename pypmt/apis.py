@@ -65,7 +65,6 @@ def solve(domainfile:str, problemfile:str, config_name=None, validate_plan=True)
     # search
     search_strategy = config.get("search")
     plan = search_strategy(encoder_instance, schedule).search()
-
     # validate plan if there is a plan and we're asked to
     if plan and validate_plan:
         plan.validate()

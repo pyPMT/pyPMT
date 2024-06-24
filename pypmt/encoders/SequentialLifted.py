@@ -329,6 +329,8 @@ class EncoderSequentialLifted(Encoder):
                 return self._expr_to_z3(expr.args[0], t, ctx) - self._expr_to_z3(expr.args[1], t, ctx)
             elif expr.is_not():
                 return z3.Not(self._expr_to_z3(expr.args[0], t, ctx))
+            elif expr.is_equals():
+                return self._expr_to_z3(expr.args[0], t, ctx) == self._expr_to_z3(expr.args[1], t, ctx)
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:
@@ -499,4 +501,5 @@ class EncoderSequentialLifted(Encoder):
         encoded_formula['frame'] = z3.And(self.encode_frame())
         encoded_formula['typing'] = z3.And(self.formula['typing'])
         self.formula = encoded_formula
+        self.formula_length += 1
         return encoded_formula

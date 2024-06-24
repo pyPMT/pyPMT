@@ -10,7 +10,6 @@ from pypmt.utilities import log
 class LiftedSearch(Search):
 
     def search(self):
-        self.solution = SMTSequentialPlan(None, None)
 
         log(f'Starting to solve', 1)
         total_time = 0

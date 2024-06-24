@@ -326,8 +326,11 @@ class EncoderSequentialQFUF(Encoder):
 
             # for an action to be executable, it needs to be selected
             # and the types need to be correct
-            action = z3.Implies(z3.And([action_matches]), 
-                                z3.And([action_typing, action_pre, action_eff]))
+            if all(len(action.children()) == 0 for action in [action_typing, action_pre, action_eff]):
+                action = z3.Implies(action_matches, z3.BoolVal(True, ctx=self.ctx))
+            else:
+                action = z3.Implies(z3.And([action_matches]), 
+                                    z3.And([action_typing, action_pre, action_eff]))
             actions.append(action)
         return z3.And(actions)
 
@@ -387,7 +390,7 @@ class EncoderSequentialQFUF(Encoder):
         plan = SequentialPlan([])
         if not model: return plan
         ## linearize partial-order plan
-        for step in range(0, horizon):
+        for step in range(0, horizon+1):
             # which action is in step "step?"
             action_selected = model.evaluate(self.z3_action_variable(step))
             up_action = self.up_actions_mapping[action_selected]
@@ -423,6 +426,7 @@ class EncoderSequentialQFUF(Encoder):
         encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions)
         encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions)
         encoded_formula['typing']  = self.formula['typing']
+        self.formula_length += 1
         return encoded_formula
 
     def base_encode(self):
@@ -436,6 +440,7 @@ class EncoderSequentialQFUF(Encoder):
         self.formula['actions'] = z3.And(self.encode_actions())  # Encode universal axioms
         self.formula['frame']   = z3.And(self.encode_frame())  # Encode explanatory frame axioms
         self.formula['typing']  = z3.And(self.formula['typing'])  # Encode explanatory frame axioms
+        self.formula_length += 1 # increment the formula length.
 
     # TODO abstract this away in utilities.py
     def _expr_to_z3(self, expr, t, ctx=None):
@@ -494,6 +499,8 @@ class EncoderSequentialQFUF(Encoder):
                 return self._expr_to_z3(expr.args[0], t, ctx) - self._expr_to_z3(expr.args[1], t, ctx)
             elif expr.is_not():
                 return z3.Not(self._expr_to_z3(expr.args[0], t, ctx))
+            elif expr.is_equals():
+                return self._expr_to_z3(expr.args[0], t, ctx) == self._expr_to_z3(expr.args[1], t, ctx)
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
         else:
