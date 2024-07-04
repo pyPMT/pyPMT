@@ -7,9 +7,10 @@ from unified_planning.plans import ActionInstance
 
 from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind
 from unified_planning.shortcuts import Compiler, CompilationKind
+from unified_planning.model.fluent import get_all_fluent_exp
 
 from pypmt.utilities import timethis, log
-from pypmt.encoders.utilities import remove_delete_then_set
+from pypmt.encoders.utilities import flattern_list, remove_delete_then_set
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 from pypmt.encoders.base import Encoder
 
@@ -33,6 +34,9 @@ class EncoderSequentialQFUF(Encoder):
         # needed for the frame
         self.grounding_results = self._ground() # store the grounded UP results
         self.ground_problem    = self.grounding_results.problem  # The grounded UP problem
+
+        # cache all fluents in the problem.
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.ground_problem, f)) for f in self.ground_problem.fluents])
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int
         self.z3_timestep_var = None # the var that stores the last step
@@ -260,6 +264,19 @@ class EncoderSequentialQFUF(Encoder):
         Encodes formula defining initial state
         @return initial: Z3 formula asserting initial state
         """
+        # set default values for uninitialized fluents
+        initialized_fluents = list(self.ground_problem.explicit_initial_values.keys())
+        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
+        for fe in unintialized_fluents:
+            if fe.type.is_bool_type():
+                self.ground_problem.set_initial_value(fe, False)
+                self.task.set_initial_value(fe, False) # we need this for plan validator.
+            elif fe.type.is_real_type():
+                self.ground_problem.set_initial_value(fe, 0)
+                self.task.set_initial_value(fe, 0) # we need this for plan validator.
+            else:
+                raise TypeError
+            
         t = 0
         initial = []
         for FNode, initial_value in self.ground_problem.initial_values.items():

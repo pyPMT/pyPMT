@@ -7,6 +7,7 @@ from unified_planning.shortcuts import *
 
 from pypmt.encoders.basic import EncoderGrounded
 from pypmt.encoders.utilities import str_repr
+from unified_planning.model.fluent import get_all_fluent_exp
 
 from pypmt.modifiers.modifierLinear import LinearModifier
 from pypmt.modifiers.modifierParallel import ParallelModifier
@@ -47,16 +48,13 @@ class EncoderOMT(EncoderGrounded):
             self.aux_z3_actions_to_up[act_var] = key
 
         # for fluents
-        grounded_up_fluents = [f for f, _ in self.ground_problem.initial_values.items()]
-        for grounded_fluent in grounded_up_fluents:
-            key  = str_repr(grounded_fluent)
+        for fe in self.all_fluents:
+            key  = str_repr(fe)
             keyt = "mod_" + key
-            if grounded_fluent.type.is_real_type() or grounded_fluent.type.is_bool_type():
+            if fe.type.is_real_type() or fe.type.is_bool_type():
                 self.up_fluent_to_aux_z3[key].append(z3.Bool(keyt, ctx=self.ctx))
             else:
                 raise TypeError
-
-        
 
     def encode(self,t):
 

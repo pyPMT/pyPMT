@@ -50,3 +50,6 @@ def remove_delete_then_set(effects):
     # remove delete-then-set effects
     return list(filter(lambda e: not isinstance(e.children()[0].sort(), z3.z3.BoolSortRef) or 
                                  not e.children()[0] in deleted_then_set_fluents, effects))
+
+def flattern_list(list_of_lists):
+    return sum((flattern_list(sub) if isinstance(sub, list) else [sub] for sub in list_of_lists), [])

@@ -146,7 +146,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
         # the precondition of the first action to be encoded should always apply
         # the identity substitution. That is, be encoded as normal. Therefore we initialise
         # the first column with the normal (same) variable
-        grounded_fluents_str =[str_repr(f) for f, _ in self.ground_problem.initial_values.items()]
+        grounded_fluents_str =[str_repr(f) for f in self.all_fluents]
         for fluent_str in grounded_fluents_str:
             self.chain_lookup[fluent_str] = [None] * (len(self.sorted_actions) + 1) # initialise table with Nones
             self.chain_lookup[fluent_str][0] = fluent_str # layer 0 should be the normal var

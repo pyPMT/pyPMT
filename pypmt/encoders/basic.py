@@ -6,12 +6,13 @@ from collections import defaultdict
 from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.shortcuts import Effect, EffectKind
 from unified_planning.shortcuts import FNode
+from unified_planning.model.fluent import get_all_fluent_exp
 
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
 from pypmt.encoders.base import Encoder
-from pypmt.encoders.utilities import str_repr, remove_delete_then_set
+from pypmt.encoders.utilities import str_repr, flattern_list, remove_delete_then_set
 from pypmt.modifiers.modifierLinear import LinearModifier
 from pypmt.modifiers.modifierParallel import ParallelModifier
 
@@ -46,6 +47,9 @@ class EncoderGrounded(Encoder):
         # The main idea here is that we have lists representing
         # the layers (steps) containing the respective variables
 
+        # cache all fluents in the problem.
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.ground_problem, f)) for f in self.ground_problem.fluents])
+        
         # this is a mapping from the UP ground actions to z3 and back
         self.z3_actions_to_up = dict() # multiple z3 vars point to one grounded fluent
         self.up_actions_to_z3 = defaultdict(list)
@@ -215,13 +219,12 @@ class EncoderGrounded(Encoder):
             self.z3_actions_to_up[act_var] = key
 
         # for fluents
-        grounded_up_fluents = [f for f, _ in self.ground_problem.initial_values.items()]
-        for grounded_fluent in grounded_up_fluents:
-            key  = str_repr(grounded_fluent)
-            keyt = str_repr(grounded_fluent, t)
-            if grounded_fluent.type.is_real_type():
+        for fe in self.all_fluents:
+            key  = str_repr(fe)
+            keyt = str_repr(fe, t)
+            if fe.type.is_real_type():
                 self.up_fluent_to_z3[key].append(z3.Real(keyt, ctx=self.ctx))
-            elif grounded_fluent.type.is_bool_type():
+            elif fe.type.is_bool_type():
                 self.up_fluent_to_z3[key].append(z3.Bool(keyt, ctx=self.ctx))
             else:
                 raise TypeError
@@ -231,6 +234,19 @@ class EncoderGrounded(Encoder):
         Encodes formula defining initial state
         @returns: Z3 formula asserting initial state
         """
+        # set default values for uninitialized fluents
+        initialized_fluents = list(self.ground_problem.explicit_initial_values.keys())
+        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
+        for fe in unintialized_fluents:
+            if fe.type.is_bool_type():
+                self.ground_problem.set_initial_value(fe, False)
+                self.task.set_initial_value(fe, False) # we need this for plan validator.
+            elif fe.type.is_real_type():
+                self.ground_problem.set_initial_value(fe, 0)
+                self.task.set_initial_value(fe, 0) # we need this for plan validator.
+            else:
+                raise TypeError
+
         t = 0
         initial = []
         for FNode, initial_value in self.ground_problem.initial_values.items():
