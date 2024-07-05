@@ -170,7 +170,9 @@ class EncoderOMT(EncoderGrounded):
             
             
             # assert universal
+            action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)
             abstract_actions.append(z3.Implies(action_var, z3.And(action_pre)))
+            action_eff = z3.And(action_eff) if len(action_eff) > 0 else z3.BoolVal(True, ctx=self.ctx)
             abstract_actions.append(z3.Implies(action_var, z3.And(action_eff)))
             
         # Ensure that auxiliary variables are true only if corresponding abstract action is executed

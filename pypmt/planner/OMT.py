@@ -40,6 +40,8 @@ class OMTSearch(Search):
             del formula['abstract_goal']
 
             # deal with abstract formulas 
+            formula['loop_formulas']    = z3.BoolVal(True, ctx=context) if len(formula['loop_formulas'].children()) == 0    else formula['loop_formulas']
+            formula['abstract_actions'] = z3.BoolVal(True, ctx=context) if len(formula['abstract_actions'].children()) == 0 else formula['abstract_actions']
             reified_abstract_formulas = z3.Implies(g, z3.And(formula['abstract_actions'],formula['loop_formulas'] ))
             self.solver.add(reified_abstract_formulas) # Add the abstract transition formulas
             del formula['abstract_actions']
