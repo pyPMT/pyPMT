@@ -5,7 +5,7 @@ from collections import defaultdict
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
-from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind
+from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind, Fraction
 from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.model.fluent import get_all_fluent_exp
 
@@ -542,5 +542,7 @@ class EncoderSequentialQFUF(Encoder):
                 return z3.Implies(self._expr_to_z3(expr.args[0], t, ctx), self._expr_to_z3(expr.args[1], t, ctx))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
+        elif isinstance(expr, Fraction):
+            return z3.RealVal(f"{expr.numerator}/{expr.denominator}", ctx=self.ctx)
         else:
             raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")

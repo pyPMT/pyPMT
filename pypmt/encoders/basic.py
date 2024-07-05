@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.shortcuts import Effect, EffectKind
-from unified_planning.shortcuts import FNode
+from unified_planning.shortcuts import FNode, Fraction
 from unified_planning.model.fluent import get_all_fluent_exp
 
 from unified_planning.plans import SequentialPlan
@@ -394,6 +394,8 @@ class EncoderGrounded(Encoder):
                 return z3.Implies(self._expr_to_z3(expr.args[0], t, c), self._expr_to_z3(expr.args[1], t, c))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
+        elif isinstance(expr, Fraction):
+            return z3.RealVal(f"{expr.numerator}/{expr.denominator}", ctx=self.ctx)
         else:
             raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
 

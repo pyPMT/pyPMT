@@ -3,7 +3,7 @@ from collections import defaultdict, namedtuple
 
 import z3
 
-from unified_planning.shortcuts import EffectKind, FNode
+from unified_planning.shortcuts import EffectKind, FNode, Fraction
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
@@ -401,5 +401,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
                 return z3.Implies(self._expr_to_z3(expr.args[0], t, c), self._expr_to_z3(expr.args[1], t, c))
             else:
                 raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
+        elif isinstance(expr, Fraction):
+            return z3.RealVal(f"{expr.numerator}/{expr.denominator}", ctx=self.ctx)
         else:
             raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
