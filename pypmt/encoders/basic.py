@@ -40,6 +40,12 @@ class EncoderGrounded(Encoder):
         self.modifier = modifier
         self.ctx = z3.Context() # The context where we will store the problem
 
+        # cache all fluents in the problem.
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in self.task.fluents])
+
+        # initialize the fluents that are not in the initial state
+        self._initialize_fluents()
+        
         self.compilation_results = self._ground() # store the compilation results
         self.grounding_results   = self.compilation_results[-1] # store the grounded UP results
         self.ground_problem      = self.grounding_results.problem  # The grounded UP problem
@@ -47,9 +53,6 @@ class EncoderGrounded(Encoder):
         # The main idea here is that we have lists representing
         # the layers (steps) containing the respective variables
 
-        # cache all fluents in the problem.
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.ground_problem, f)) for f in self.ground_problem.fluents])
-        
         # this is a mapping from the UP ground actions to z3 and back
         self.z3_actions_to_up = dict() # multiple z3 vars point to one grounded fluent
         self.up_actions_to_z3 = defaultdict(list)
@@ -73,6 +76,17 @@ class EncoderGrounded(Encoder):
     
     def __len__(self):
         return self.formula_length
+
+    def _initialize_fluents(self):
+        initialized_fluents = list(self.task.explicit_initial_values.keys())
+        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
+        for fe in unintialized_fluents:
+            if fe.type.is_bool_type():
+                self.task.set_initial_value(fe, False) # we need this for plan validator.
+            elif fe.type.is_real_type():
+                self.task.set_initial_value(fe, 0) # we need this for plan validator.
+            else:
+                raise TypeError
 
     def get_action_var(self, name, t):
         """!
@@ -234,19 +248,6 @@ class EncoderGrounded(Encoder):
         Encodes formula defining initial state
         @returns: Z3 formula asserting initial state
         """
-        # set default values for uninitialized fluents
-        initialized_fluents = list(self.ground_problem.explicit_initial_values.keys())
-        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
-        for fe in unintialized_fluents:
-            if fe.type.is_bool_type():
-                self.ground_problem.set_initial_value(fe, False)
-                self.task.set_initial_value(fe, False) # we need this for plan validator.
-            elif fe.type.is_real_type():
-                self.ground_problem.set_initial_value(fe, 0)
-                self.task.set_initial_value(fe, 0) # we need this for plan validator.
-            else:
-                raise TypeError
-
         t = 0
         initial = []
         for FNode, initial_value in self.ground_problem.initial_values.items():
