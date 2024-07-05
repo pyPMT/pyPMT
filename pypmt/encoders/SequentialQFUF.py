@@ -31,12 +31,8 @@ class EncoderSequentialQFUF(Encoder):
         assert len(self.task.all_objects) > 0, "problem fully grounded, please use a different encoder"
         self.ctx = z3.Context() # The context where we will store the problem
 
-        # needed for the frame
-        self.grounding_results = self._ground() # store the grounded UP results
-        self.ground_problem    = self.grounding_results.problem  # The grounded UP problem
-
         # cache all fluents in the problem.
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.ground_problem, f)) for f in self.ground_problem.fluents])
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in self.task.fluents])
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int
         self.z3_timestep_var = None # the var that stores the last step
@@ -265,21 +261,21 @@ class EncoderSequentialQFUF(Encoder):
         @return initial: Z3 formula asserting initial state
         """
         # set default values for uninitialized fluents
-        initialized_fluents = list(self.ground_problem.explicit_initial_values.keys())
+        initialized_fluents = list(self.task.explicit_initial_values.keys())
         unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
         for fe in unintialized_fluents:
             if fe.type.is_bool_type():
-                self.ground_problem.set_initial_value(fe, False)
+                self.task.set_initial_value(fe, False)
                 self.task.set_initial_value(fe, False) # we need this for plan validator.
             elif fe.type.is_real_type():
-                self.ground_problem.set_initial_value(fe, 0)
+                self.task.set_initial_value(fe, 0)
                 self.task.set_initial_value(fe, 0) # we need this for plan validator.
             else:
                 raise TypeError
             
         t = 0
         initial = []
-        for FNode, initial_value in self.ground_problem.initial_values.items():
+        for FNode, initial_value in self.task.initial_values.items():
             name = FNode.fluent().name # we translate the FNode to a Fluent and get its name
             parameters = [] # now we translate the parameters to Z3 objects
             for arg in FNode.args:
@@ -302,9 +298,8 @@ class EncoderSequentialQFUF(Encoder):
         """
         t =  self.z3_timestep_var
         goal = []
-        for goal_pred in self.ground_problem.goals:
+        for goal_pred in self.task.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
-        #print(f"goal: {goal}")
         return goal
 
     def encode_actions(self):
@@ -375,7 +370,7 @@ class EncoderSequentialQFUF(Encoder):
         frame = [] # the whole frame
 
         # for each grounded fluent, we say its different from t to t + 1
-        grounded_up_fluents = [f for f, _ in self.ground_problem.initial_values.items()]
+        grounded_up_fluents = [f for f, _ in self.task.initial_values.items()]
         for grounded_fluent in grounded_up_fluents:
             fluent_name = grounded_fluent.fluent().name
             z3_fluent = self.z3_fluents[fluent_name]
