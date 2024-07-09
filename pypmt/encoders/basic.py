@@ -50,7 +50,7 @@ class EncoderGrounded(Encoder):
         
         self.compilation_results = self._ground() # store the compilation results
         self.grounding_results   = self.compilation_results[-1] # store the grounded UP results
-        self.ground_problem      = self.grounding_results.problem  # The grounded UP problem
+        self.ground_problem      = self.grounding_results.problem if isinstance(self.grounding_results, CompilerResult) else self.grounding_results # The grounded UP problem
 
         # The main idea here is that we have lists representing
         # the layers (steps) containing the respective variables
