@@ -33,8 +33,8 @@ class EncoderSequentialQFUF(Encoder):
         self.ctx = z3.Context() # The context where we will store the problem
 
         # cache all fluents in the problem.
-        _fluents = self.task.problem.fluents if isinstance(self.task, CompilerResult) else self.task.fluents
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in _fluents])
+        _task    = self.task.problem if isinstance(self.task, CompilerResult) else self.task
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(_task, f)) for f in _task])
         self._initialize_fluents()
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int
