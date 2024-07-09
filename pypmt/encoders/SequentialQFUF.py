@@ -34,8 +34,8 @@ class EncoderSequentialQFUF(Encoder):
 
         # cache all fluents in the problem.
         _task    = self.task.problem if isinstance(self.task, CompilerResult) else self.task
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(_task, f)) for f in _task])
-        self._initialize_fluents()
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(_task, f)) for f in _task.fluents])
+        self._initialize_fluents(_task, self.all_fluents)
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int
         self.z3_timestep_var = None # the var that stores the last step
@@ -84,14 +84,14 @@ class EncoderSequentialQFUF(Encoder):
     def __len__(self):
         return self.formula_length
     
-    def _initialize_fluents(self):
-        initialized_fluents = list(self.task.explicit_initial_values.keys())
-        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, self.all_fluents))
+    def _initialize_fluents(self, _task, _fluentslist):
+        initialized_fluents = list(_task.explicit_initial_values.keys())
+        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, _fluentslist))
         for fe in unintialized_fluents:
             if fe.type.is_bool_type():
-                self.task.set_initial_value(fe, False) # we need this for plan validator.
+                _task.set_initial_value(fe, False) # we need this for plan validator.
             elif fe.type.is_real_type():
-                self.task.set_initial_value(fe, 0) # we need this for plan validator.
+                _task.set_initial_value(fe, 0) # we need this for plan validator.
             else:
                 raise TypeError
 
