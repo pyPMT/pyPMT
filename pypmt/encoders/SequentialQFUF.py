@@ -8,6 +8,7 @@ from unified_planning.plans import ActionInstance
 from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind, Fraction
 from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.model.fluent import get_all_fluent_exp
+from unified_planning.engines.results import CompilerResult
 
 from pypmt.utilities import timethis, log
 from pypmt.encoders.utilities import flattern_list, remove_delete_then_set
@@ -32,7 +33,8 @@ class EncoderSequentialQFUF(Encoder):
         self.ctx = z3.Context() # The context where we will store the problem
 
         # cache all fluents in the problem.
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in self.task.fluents])
+        _fluents = self.task.problem.fluents if isinstance(self.task, CompilerResult) else self.task.fluents
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in _fluents])
         self._initialize_fluents()
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int

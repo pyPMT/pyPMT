@@ -7,6 +7,7 @@ from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.shortcuts import Effect, EffectKind
 from unified_planning.shortcuts import FNode, Fraction
 from unified_planning.model.fluent import get_all_fluent_exp
+from unified_planning.engines.results import CompilerResult
 
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
@@ -41,7 +42,8 @@ class EncoderGrounded(Encoder):
         self.ctx = z3.Context() # The context where we will store the problem
 
         # cache all fluents in the problem.
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in self.task.fluents])
+        _fluents = self.task.problem.fluents if isinstance(self.task, CompilerResult) else self.task.fluents
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(self.task, f)) for f in _fluents])
 
         # initialize the fluents that are not in the initial state
         self._initialize_fluents()
