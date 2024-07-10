@@ -70,7 +70,7 @@ class ParallelModifier(Modifier):
         # we avoid computing some of those twice on the following double for loop
         start_time = time.time()
         data_actions = {}
-        for act in encoder.ground_problem.actions:
+        for act in encoder.task.actions:
             add_a, del_a = get_add_del_effects(act)
             num_a = get_numeric_effects(act)
             pre_a = get_preconditions(act)
@@ -81,7 +81,7 @@ class ParallelModifier(Modifier):
         # main body of the function
         start_time = time.time()
         mutexes = set()
-        actions = encoder.ground_problem.actions
+        actions = encoder.task.actions
 
         for i, action_1 in enumerate(actions):
             for action_2 in actions[i+1:]:

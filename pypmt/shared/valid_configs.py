@@ -1,3 +1,4 @@
+from unified_planning.shortcuts import CompilationKind
 from pypmt.encoders.R2E import EncoderRelaxed2Exists
 from pypmt.encoders.basic import EncoderForall, EncoderSequential
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
@@ -10,12 +11,20 @@ from pypmt.planner.QFUF import QFUFSearch
 from pypmt.planner.OMT import OMTSearch
 
 # valid configs that the library is able to operate with
-valid_configs = {
-    "seq":     (EncoderSequential, SMTSearch),
-    "forall":  (EncoderForall, SMTSearch),
-    "r2e":     (EncoderRelaxed2Exists, SMTSearch),
-    "uf":      (EncoderSequentialLifted, LiftedSearch), # TODO: has to be tested and too slow
-    "qfuf":    (EncoderSequentialQFUF, QFUFSearch),
-    "omtseq":   (EncoderSequentialOMT, OMTSearch),
 
+grounded_encoders_default_compilation_list = [
+    (None, CompilationKind.QUANTIFIERS_REMOVING), 
+    (None, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING), 
+    (None, CompilationKind.GROUNDING)
+]
+
+lifted_encoders_default_compilation_list = []
+
+valid_configs = {
+    "seq":     (EncoderSequential, SMTSearch, grounded_encoders_default_compilation_list),
+    "forall":  (EncoderForall, SMTSearch, grounded_encoders_default_compilation_list),
+    "r2e":     (EncoderRelaxed2Exists, SMTSearch,  grounded_encoders_default_compilation_list),
+    "uf":      (EncoderSequentialLifted, LiftedSearch, lifted_encoders_default_compilation_list), # TODO: has to be tested and too slow
+    "qfuf":    (EncoderSequentialQFUF, QFUFSearch, lifted_encoders_default_compilation_list),
+    "omtseq":  (EncoderSequentialOMT, OMTSearch, grounded_encoders_default_compilation_list),
 }

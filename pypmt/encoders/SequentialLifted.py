@@ -229,10 +229,6 @@ class EncoderSequentialLifted(Encoder):
         #TODO: remove?
         return None
 
-    def _ground(self):
-        print("WARNING: this class does not need grounding!")
-        pass
-
     def create_variables(self, t):
         """!
         Creates variables needed in the encoding.

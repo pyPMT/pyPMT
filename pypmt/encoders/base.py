@@ -75,9 +75,3 @@ class Encoder:
         @returns the encoded formula/s
         """
         raise NotImplementedError
-
-    def _ground(self):
-        """!
-        Implements the grounding of the task, if needed
-        """
-        raise NotImplementedError

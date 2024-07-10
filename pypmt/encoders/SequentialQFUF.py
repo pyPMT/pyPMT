@@ -263,12 +263,6 @@ class EncoderSequentialQFUF(Encoder):
         #TODO: remove?
         return None
 
-    def _ground(self):
-        grounded_problem = None
-        with Compiler(problem_kind=self.task.kind, compilation_kind=CompilationKind.GROUNDING) as grounder:
-            grounded_problem = grounder.compile(self.task, compilation_kind=CompilationKind.GROUNDING)
-        return grounded_problem
-
     def encode_initial_state(self):
         """!
         Encodes formula defining initial state

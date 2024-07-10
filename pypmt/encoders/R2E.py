@@ -52,7 +52,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
         """
         # TODO: do something meaningful in terms of the order here
         # Maybe use causal graphs?
-        return sorted([action for action in self.ground_problem.actions], key=lambda x: x.name)
+        return sorted([action for action in self.task.actions], key=lambda x: x.name)
 
     def __iter__(self):
         return iter(self.sorted_actions)
@@ -270,9 +270,6 @@ class EncoderRelaxed2Exists(EncoderGrounded):
                 if z3.is_true(model[self.up_actions_to_z3[action.name][t]]):
                     plan.actions.append(ActionInstance(action))
 
-        for compilation_r in reversed(self.compilation_results):
-            plan = plan.replace_action_instances(compilation_r.map_back_action_instance)
-
         return SMTSequentialPlan(plan, self.task)
 
     def encode(self, t):
@@ -341,7 +338,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
         """
         chain_links = []
         # for each original grounded var
-        grounded_fluents_str = [str_repr(f) for f, _ in self.ground_problem.initial_values.items()]
+        grounded_fluents_str = [str_repr(f) for f, _ in self.task.initial_values.items()]
         for grounded_fluent_str in grounded_fluents_str:
             # get where the last chain variable id that holds the value of grounded_fluent_str
             last_var_str = self.chain_lookup[grounded_fluent_str][-1] 

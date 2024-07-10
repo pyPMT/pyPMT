@@ -40,7 +40,7 @@ class EncoderOMT(EncoderGrounded):
         """
 
         # for actions
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
             key   = str_repr(grounded_action)
             keyt  = "abs_" + key
             act_var = z3.Bool(keyt, ctx=self.ctx)
@@ -147,7 +147,7 @@ class EncoderOMT(EncoderGrounded):
         # For each fluent, store actions that assign that fluent in their effects
         look_up_table = defaultdict(list, { k[t]:[] for k in self.up_fluent_to_aux_z3.values() })
 
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
             key = str_repr(grounded_action)
             action_var = self.up_actions_to_aux_z3[key][-1] # need the last one
 
@@ -212,7 +212,7 @@ class EncoderOMT(EncoderGrounded):
             r_vars = []
 
 
-            for grounded_action in self.ground_problem.actions:
+            for grounded_action in self.task.actions:
                     effects = set([eff.fluent for eff in grounded_action.effects])
 
                     if len(loop & effects) > 0:
@@ -263,7 +263,7 @@ class EncoderOMT(EncoderGrounded):
         # The reasoning is still the same but it facilitates later steps - the fluent will be converted to
         # an auxiliary variable later when encoding the loop formula.
 
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
                      
             for eff in grounded_action.effects:
 
@@ -299,12 +299,12 @@ class EncoderOMT(EncoderGrounded):
 
         objective = []
 
-        if len(self.ground_problem.quality_metrics) > 0:
-            print(self.ground_problem.quality_metrics)
+        if len(self.task.quality_metrics) > 0:
+            print(self.task.quality_metrics)
             raise
         else:
             
-            for grounded_action in self.ground_problem.actions:
+            for grounded_action in self.task.actions:
                 key = str_repr(grounded_action)
                 abs_action_var = self.up_actions_to_aux_z3[key][-1]
                 objective.append(z3.If(abs_action_var,1.0,0.0))
@@ -342,7 +342,7 @@ class EncoderParallelOMT(EncoderOMT):
     def encodeASAP(self,t):
 
         actions = []
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
             key = str_repr(grounded_action)
             # Fetch variable for action at current step t
             action_current = self.up_actions_to_z3[key][t]
@@ -574,8 +574,8 @@ class EncoderParallelOMT(EncoderOMT):
 #         """
 
 #         objective = []
-#         if len(self.ground_problem.quality_metrics) > 0:
-#             for metric in deepcopy(self.ground_problem.quality_metrics):
+#         if len(self.task.quality_metrics) > 0:
+#             for metric in deepcopy(self.task.quality_metrics):
 #                 objective.append(inorderTraverse(metric.expression, self.problem_z3_variables, self.horizon, self.problem_constant_numerics) )
 #         else:
 #             objective = []
@@ -608,7 +608,7 @@ class EncoderParallelOMT(EncoderOMT):
 #         self.auxiliary_actions = defaultdict(dict)
 
 #         for step in range(self.horizon,self.horizon+2):
-#             for action in self.ground_problem.actions:
+#             for action in self.task.actions:
 #                 self.auxiliary_actions[step][action.name] = z3.Bool('{}_{}'.format(action.name,step))
 
 #     def encodeRelaxedGoal(self):
@@ -617,7 +617,7 @@ class EncoderParallelOMT(EncoderOMT):
 
 #         @return goal: relaxed goal formula
 #         """
-#         return inorderTraverse(self.ground_problem.goals, self.problem_z3_variables, self.horizon, self.problem_constant_numerics, self.touched_variables)
+#         return inorderTraverse(self.task.goals, self.problem_z3_variables, self.horizon, self.problem_constant_numerics, self.touched_variables)
 
 #     def encodeAdditionalCosts(self):
 #         """!
@@ -636,7 +636,7 @@ class EncoderParallelOMT(EncoderOMT):
 #             cost = z3.Real('add_cost_{}'.format(step))
 #             total = []
 #             for a,v in self.auxiliary_actions[step].items():
-#                 if len(self.ground_problem.quality_metrics) > 0:
+#                 if len(self.task.quality_metrics) > 0:
 #                     total.append(z3.If(v,1.0*sum(self.final_costs[a]),0.0))
 #                 else:
 #                     total.append(z3.If(v,1.0,0.0))
@@ -681,7 +681,7 @@ class EncoderParallelOMT(EncoderOMT):
 #         relax = []
 #         step = self.horizon
 
-#         for action in self.ground_problem.actions:
+#         for action in self.task.actions:
 #             # Append preconditions
 #             for pre in action.preconditions:
 #                 precondition = inorderTraverse(pre, self.problem_z3_variables, step, self.problem_constant_numerics)
@@ -707,7 +707,7 @@ class EncoderParallelOMT(EncoderOMT):
 #         c = []
 
 #         for step in range(self.horizon+1):
-#             for action in self.ground_problem.actions:
+#             for action in self.task.actions:
 #                 # Condition 1: action already executed at
 #                 # previous step
 #                 act_pre = all_actions[step][action.name]
@@ -742,7 +742,7 @@ class EncoderParallelOMT(EncoderOMT):
 #         trac = []
 #         step = self.horizon+1
 
-#         for action in self.ground_problem.actions:
+#         for action in self.task.actions:
 #             # Append preconditions
 #             for pre in action.preconditions:
 #                 touched_vars = []
@@ -763,7 +763,7 @@ class EncoderParallelOMT(EncoderOMT):
 #             if fluent.type.is_bool_type():
 #                 # Encode frame axioms only if atoms have SMT variables associated
 #                 action_eff = []
-#                 for action in self.ground_problem.actions:
+#                 for action in self.task.actions:
 #                     effects_fluents = [effect for effect in action.effects if effect.value.type.is_bool_type()]
 
 #                     for ele in effects_fluents:
@@ -778,7 +778,7 @@ class EncoderParallelOMT(EncoderOMT):
 
 #             elif fluent.type.is_int_type() or fluent.type.is_real_type():
 #                 action_num = []
-#                 for action in self.ground_problem.actions:
+#                 for action in self.task.actions:
 #                     effects_fluents = [effect for effect in action.effects if effect.value.type.is_int_type() or effect.value.type.is_real_type()]
 #                     for ele in effects_fluents:
 #                         if str(ele.fluent) == str(fluent):

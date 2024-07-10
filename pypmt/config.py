@@ -10,6 +10,7 @@ class config:
 
         "encoder" : None,
         "search" : None,
+        "compilationlist" : None,
         "propagator" : None,
         "extractor" : None, # Not used for now
         "validator" : None # Not used for now
@@ -22,6 +23,7 @@ class config:
 
         "encoder" : "The encoder class used to encode the problem",
         "search" : "The search algorithm that the class will use",
+        "compilationlist": "The list of compilation steps to apply to the task before encoding",
         "propagator" : "If a propagator class has to be used to help during search",
         "extractor" : "The way of extracting the plan from a model",
         "validator" : "The method to validate the plan"

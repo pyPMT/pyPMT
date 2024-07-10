@@ -42,15 +42,7 @@ class EncoderGrounded(Encoder):
         self.ctx = z3.Context() # The context where we will store the problem
 
         # cache all fluents in the problem.
-        _task    = self.task.problem if isinstance(self.task, CompilerResult) else self.task
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(_task, f)) for f in _task.fluents])
-
-        # initialize the fluents that are not in the initial state
-        self._initialize_fluents(_task, self.all_fluents)
-        
-        self.compilation_results = self._ground() # store the compilation results
-        self.grounding_results   = self.compilation_results[-1] # store the grounded UP results
-        self.ground_problem      = self.grounding_results.problem if isinstance(self.grounding_results, CompilerResult) else self.grounding_results # The grounded UP problem
+        self.all_fluents = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
 
         # The main idea here is that we have lists representing
         # the layers (steps) containing the respective variables
@@ -74,7 +66,7 @@ class EncoderGrounded(Encoder):
         self.formula_length = 0
 
     def __iter__(self):
-        return iter(self.ground_problem.actions)
+        return iter(self.task.actions)
     
     def __len__(self):
         return self.formula_length
@@ -101,33 +93,12 @@ class EncoderGrounded(Encoder):
         """
         return self.up_actions_to_z3[name][t]
 
-    # TODO: should we consider fixing the grounder to use? Now this would
-    # depend on the installation of UP and what is available.
-    def _ground(self):
-        """! 
-        Removes quantifiers from the UP problem via the QUANTIFIERS_REMOVING 
-        compiler, implies keyword via DISJUNCTIVE_CONDITIONS_REMOVING compiler and then grounds the problem using an available UP grounder
-        """
-        with Compiler(problem_kind = self.task.kind, 
-            compilation_kind = CompilationKind.QUANTIFIERS_REMOVING) as quantifiers_remover:
-            qr_result  = quantifiers_remover.compile(self.task, CompilationKind.QUANTIFIERS_REMOVING)
-
-        with Compiler(problem_kind = qr_result.problem.kind, 
-            compilation_kind = CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING) as quantifiers_remover:
-            dcr_result  = quantifiers_remover.compile(qr_result.problem, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING)
-
-        with Compiler(problem_kind = dcr_result.problem.kind, 
-            compilation_kind = CompilationKind.GROUNDING) as grounder:
-            gr_result = grounder.compile(dcr_result.problem, CompilationKind.GROUNDING)
-
-        return (qr_result, dcr_result, gr_result)
-        
     def _populate_modifiers(self):
         """!
         Populates an index on which grounded actions can modify which fluents. 
         These are used afterwards for encoding the frame.
         """
-        for action in self.ground_problem.actions:
+        for action in self.task.actions:
             str_action = str_repr(action)
             for effect in action.effects:
                var_modified = str_repr(effect.fluent)
@@ -151,10 +122,6 @@ class EncoderGrounded(Encoder):
             for action in self:
                 if z3.is_true(model[self.up_actions_to_z3[action.name][t]]):
                         plan.actions.append(ActionInstance(action))
-        
-        for compilation_r in reversed(self.compilation_results):
-            plan = plan.replace_action_instances(compilation_r.map_back_action_instance)
-
         return SMTSequentialPlan(plan, self.task)
 
     def encode(self, t):
@@ -227,7 +194,7 @@ class EncoderGrounded(Encoder):
         self.formula_length += 1
 
         # for actions
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
             key   = str_repr(grounded_action)
             keyt  = str_repr(grounded_action, t)
             act_var = z3.Bool(keyt, ctx=self.ctx)
@@ -252,7 +219,7 @@ class EncoderGrounded(Encoder):
         """
         t = 0
         initial = []
-        for FNode, initial_value in self.ground_problem.initial_values.items():
+        for FNode, initial_value in self.task.initial_values.items():
             fluent = self._expr_to_z3(FNode, t)
             value  = self._expr_to_z3(initial_value, t)
             initial.append(fluent == value)
@@ -268,7 +235,7 @@ class EncoderGrounded(Encoder):
         @returns: Z3 formula asserting propositional and numeric subgoals
         """
         goal = []
-        for goal_pred in self.ground_problem.goals:
+        for goal_pred in self.task.goals:
             goal.append(self._expr_to_z3(goal_pred, t + 1))
         return goal
 
@@ -283,7 +250,7 @@ class EncoderGrounded(Encoder):
         @returns: list of Z3 formulas asserting the actions
         """
         actions = []
-        for grounded_action in self.ground_problem.actions:
+        for grounded_action in self.task.actions:
             key = str_repr(grounded_action)
             action_var = self.up_actions_to_z3[key][t]
 
@@ -317,7 +284,7 @@ class EncoderGrounded(Encoder):
         frame = [] # the whole frame
 
         # for each grounded fluent, we say its different from t to t + 1
-        grounded_up_fluents = [f for f, _ in self.ground_problem.initial_values.items()]
+        grounded_up_fluents = [f for f, _ in self.task.initial_values.items()]
         for grounded_fluent in grounded_up_fluents:
             key    = str_repr(grounded_fluent)
             var_t  = self.up_fluent_to_z3[key][t]
