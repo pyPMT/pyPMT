@@ -5,13 +5,14 @@ from unified_planning.engines.results import CompilerResult
 from unified_planning.io import PDDLReader
 from unified_planning.model.fluent import get_all_fluent_exp
 
-from pypmt.encoders.R2E import EncoderRelaxed2Exists
-from pypmt.encoders.basic import EncoderForall, EncoderSequential
 
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
+from pypmt.encoders.R2E import EncoderRelaxed2Exists
+from pypmt.encoders.basic import EncoderForall, EncoderSequential
+
 
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.lifted import LiftedSearch
@@ -24,7 +25,7 @@ from pypmt.config import config
 
 from pypmt.utilities import log
 
-def compile(task, compilationlist):
+def compile(task:Problem, compilationlist:list):
     compiled_tasks = [task]
     for name, compilation_kind in compilationlist:
         args = {}
@@ -34,6 +35,23 @@ def compile(task, compilationlist):
         with Compiler(**args, problem_kind = _task.kind) as compiler:
             compiled_tasks.append(compiler.compile(_task, args['compilation_kind']))
     return compiled_tasks
+
+def check_compatibility(encoder:Encoder, compliationlist:list):
+    compatible = True
+    reason = ['incompatibility reasons:']
+    # First check is to know whether the encoder requires grounding or not.
+    requires_grounding = 'EncoderGrounded' in [c.__name__ for c in encoder.__mro__]
+    has_grounding = any([kind == CompilationKind.GROUNDING for _, kind in compliationlist])
+
+    if requires_grounding and not has_grounding:
+        reason.append(f"The {encoder.__name__} requires grounding but the compilation list does not have it.")
+    if not requires_grounding and has_grounding:
+        reason.append(f"The {encoder.__name__} does not require grounding but the compilation list has it.")
+
+    compatible = compatible and ((requires_grounding == has_grounding) or not (requires_grounding or has_grounding))    
+    
+    return compatible, '\n'.join(reason)
+
 
 def initialize_fluents(task:Problem):
     fluentslist = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
@@ -52,6 +70,8 @@ def create_encoder(encoder:Encoder, domainfile:str, problemfile:str, compilation
     # initialise the fluents
     initialize_fluents(task)
     # TODO: we need to find a way to validate the compilation list compatibility with the encoder before proceeding.
+    compatible, reason = check_compatibility(encoder, compilationlist)
+    assert compatible, f"The compilation list is not compatible due to the following {reason}"
     # apply compilation list.
     compiled_tasks = compile(task, compilationlist)
     arg_task = compiled_tasks[-1].problem if isinstance(compiled_tasks[-1], CompilerResult) else compiled_tasks[-1]
