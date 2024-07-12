@@ -40,15 +40,19 @@ def check_compatibility(encoder:Encoder, compliationlist:list):
     compatible = True
     reason = ['incompatibility reasons:']
     # First check is to know whether the encoder requires grounding or not.
-    requires_grounding = 'EncoderGrounded' in [c.__name__ for c in encoder.__mro__]
+    grounded_encoding = 'EncoderGrounded' in [c.__name__ for c in encoder.__mro__]
     has_grounding = any([kind == CompilationKind.GROUNDING for _, kind in compliationlist])
+    has_qunatifiers_removal = any([kind == CompilationKind.QUANTIFIERS_REMOVING for _, kind in compliationlist])
 
-    if requires_grounding and not has_grounding:
+    if grounded_encoding and not has_grounding:
         reason.append(f"The {encoder.__name__} requires grounding but the compilation list does not have it.")
-    if not requires_grounding and has_grounding:
+    if not grounded_encoding and has_grounding:
         reason.append(f"The {encoder.__name__} does not require grounding but the compilation list has it.")
+    if grounded_encoding and not has_qunatifiers_removal:
+        reason.append(f"The {encoder.__name__} requires quantifiers removal but the compilation list does not have it.")
 
-    compatible = compatible and ((requires_grounding == has_grounding) or not (requires_grounding or has_grounding))    
+    compatible = compatible and ((grounded_encoding and has_grounding) or (not grounded_encoding and not has_grounding))
+    compatible = compatible and ((grounded_encoding and has_qunatifiers_removal) or (not grounded_encoding))
     
     return compatible, '\n'.join(reason)
 
