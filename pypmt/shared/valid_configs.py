@@ -13,9 +13,9 @@ from pypmt.planner.OMT import OMTSearch
 # valid configs that the library is able to operate with
 
 grounded_encoders_default_compilation_list = [
-    (None, CompilationKind.QUANTIFIERS_REMOVING), 
-    (None, CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING), 
-    (None, CompilationKind.GROUNDING)
+    ('up_quantifiers_remover', CompilationKind.QUANTIFIERS_REMOVING), 
+    ('up_disjunctive_conditions_remover', CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING), 
+    ('up_grounder', CompilationKind.GROUNDING)
 ]
 
 lifted_encoders_default_compilation_list = []

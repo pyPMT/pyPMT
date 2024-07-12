@@ -26,15 +26,11 @@ from pypmt.config import config
 from pypmt.utilities import log
 
 def compile(task:Problem, compilationlist:list):
-    compiled_tasks = [task]
-    for name, compilation_kind in compilationlist:
-        args = {}
-        if name: args['name'] = name
-        args['compilation_kind'] = compilation_kind
-        _task = compiled_tasks[-1] if 'kind' in dir(compiled_tasks[-1]) else compiled_tasks[-1].problem
-        with Compiler(**args, problem_kind = _task.kind) as compiler:
-            compiled_tasks.append(compiler.compile(_task, args['compilation_kind']))
-    return compiled_tasks
+    names = [name for name, _ in compilationlist]
+    compilationkinds = [kind for _, kind in compilationlist]
+    with Compiler(names=names, compilation_kinds=compilationkinds) as compiler:
+        compiled_task = compiler.compile(task)
+    return compiled_task
 
 def check_compatibility(encoder:Encoder, compliationlist:list):
     compatible = True
@@ -77,9 +73,8 @@ def create_encoder(encoder:Encoder, domainfile:str, problemfile:str, compilation
     compatible, reason = check_compatibility(encoder, compilationlist)
     assert compatible, f"The compilation list is not compatible due to the following {reason}"
     # apply compilation list.
-    compiled_tasks = compile(task, compilationlist)
-    arg_task = compiled_tasks[-1].problem if isinstance(compiled_tasks[-1], CompilerResult) else compiled_tasks[-1]
-    return encoder(arg_task), compiled_tasks
+    compiled_task = compile(task, compilationlist)
+    return encoder(compiled_task.problem), compiled_task
 
 def generate_schedule():
     encoder = config.get("encoder")
@@ -127,7 +122,7 @@ def solve(domainfile:str, problemfile:str, config_name:str=None, compilationlist
     assert compilationlist is not None, "Compilation list not set"
 
     schedule = generate_schedule()
-    encoder_instance, compiled_tasks = create_encoder(encoder, domainfile, problemfile, compilationlist)
+    encoder_instance, compiled_task = create_encoder(encoder, domainfile, problemfile, compilationlist)
 
     # search
     search_strategy = config.get("search")
@@ -136,11 +131,8 @@ def solve(domainfile:str, problemfile:str, config_name:str=None, compilationlist
     if plan and validate_plan:
         plan.validate()
         # lift the plan to it's original task.
-        up_seq_plan = plan.plan
-        for compilation_r in reversed(compiled_tasks[1:]):
-            up_seq_plan = up_seq_plan.replace_action_instances(compilation_r.map_back_action_instance)
-        plan.plan = up_seq_plan
-
+        plan.plan = plan.plan.replace_action_instances(compiled_task.map_back_action_instance)
+        
     if plan is None:
         log('No solution found', 1)
         return None
