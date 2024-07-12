@@ -5,6 +5,8 @@ from unified_planning.engines.results import CompilerResult
 from unified_planning.io import PDDLReader
 from unified_planning.model.fluent import get_all_fluent_exp
 
+from unified_planning.shortcuts import get_environment
+from unified_planning.shortcuts import Fraction
 
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
@@ -47,23 +49,27 @@ def check_compatibility(encoder:Encoder, compliationlist:list):
     if grounded_encoding and not has_qunatifiers_removal:
         reason.append(f"The {encoder.__name__} requires quantifiers removal but the compilation list does not have it.")
 
-    compatible = compatible and ((grounded_encoding and has_grounding) or (not grounded_encoding and not has_grounding))
-    compatible = compatible and ((grounded_encoding and has_qunatifiers_removal) or (not grounded_encoding))
+    compatible = compatible and ((not grounded_encoding and not has_grounding) or (grounded_encoding and has_grounding and has_qunatifiers_removal))
     
     return compatible, '\n'.join(reason)
 
 
 def initialize_fluents(task:Problem):
+    # update the initial defaults to account for real and integer types.
+    _env = get_environment()
+    _tm = _env.type_manager
+    _em = _env.expression_manager
+    task.initial_defaults.update({_tm.RealType():_em.Real(Fraction(0))})
+    task.initial_defaults.update({_tm.IntType() :_em.Int(0)})
+
+    # list unitialized fluents.
     fluentslist = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
     initialized_fluents  = list(task.explicit_initial_values.keys())
     unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, fluentslist))
+    
+    # update the initial values for the fluents that are not initialized.
     for fe in unintialized_fluents:
-        if fe.type.is_bool_type():
-            task.set_initial_value(fe, False) # we need this for plan validator.
-        elif fe.type.is_real_type():
-            task.set_initial_value(fe, 0) # we need this for plan validator.
-        else:
-            raise TypeError
+        task.set_initial_value(fe, task.initial_defaults[fe.type]) 
 
 def create_encoder(encoder:Encoder, domainfile:str, problemfile:str, compilationlist:list):
     task = PDDLReader().parse_problem(domainfile, problemfile)
