@@ -1,8 +1,8 @@
 import time
-from pypmt.config import config
 
 def log(message, level):
-    logger = config.get("logger")
+    from pypmt.config import global_config
+    logger = global_config.get("logger")
     if level == 0:
         logger.critical(message)
     elif level == 1:

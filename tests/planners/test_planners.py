@@ -5,15 +5,16 @@ from collections import defaultdict
 from timeit import default_timer as timer
 
 from pypmt.apis import solve
+from pypmt.config import Config
 from pypmt.shortcuts import *
 
 from .utilities import read_tasks_files
 
 def run_planner(name, pddldir):
     tasks = read_tasks_files(pddldir)
-    tasks_results = defaultdict(bool)
+    tasks_results = defaultdict()
     for domainname, domainfile, problemfile in tasks:
-        plan = solve(domainfile, problemfile, name, validate_plan=True)
+        plan = solve(domainfile, problemfile, Config(name), validate_plan=True)
         tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
 
     failed_domains = []

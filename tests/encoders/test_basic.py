@@ -1,10 +1,9 @@
 
 import unified_planning
+import unified_planning.model
 from unified_planning.shortcuts import UserType, BoolType
 
 import pytest
-
-from pypmt.shortcuts import EncoderSequential
 
 def create_robot_planning_task():
     """!
