@@ -2,14 +2,18 @@ import os
 import sys
 import argparse
 
-from pypmt.config import config
+from pypmt.config import Config
 from pypmt.apis import solve, dump_smtlib
 
-DESCRIPTION = "driver script"
+DESCRIPTION = "pyPMT Driver Script"
 
-def _is_valid_file(arg):
+def _is_valid_file(arg: str) -> str:
     """
     Checks whether input PDDL files exist and are valid
+    Args: arg (str): The path to the PDDL file.
+    Returns: str: The validated path to the PDDL file.
+    Raises:
+        argparse.ArgumentTypeError: If the file does not exist or is not a PDDL file.
     """
     if not os.path.exists(arg):
         raise argparse.ArgumentTypeError('{} not found!'.format(arg))
@@ -18,118 +22,130 @@ def _is_valid_file(arg):
     else:
         return arg
 
-def can_create_file(full_path):
+def can_create_file(arg: str) -> str:
+    """
+    Check if a file can be created at the specified path.
+    
+    This function determines whether a file can be created at the given full
+    path by checking the existence and write permissions of the directory
+    containing the file.
+
+    Args:
+        arg (str): The full path where the file is to be created. 
+                   This can be an absolute or relative path.
+
+    Returns:
+        str: The validated path to the file.
+
+    Raises:
+        argparse.ArgumentTypeError: If the file cannot be created at the specified path.
+    """
     # Extract the directory path from the full path
-    full_path = os.path.abspath(full_path) # if relative, transform to absolute
+    full_path = os.path.abspath(arg)  # if relative, transform to absolute
     directory = os.path.dirname(full_path)
 
     # Check if the file can be created at the specified path
     if os.access(directory, os.F_OK) and os.access(directory, os.W_OK):
-        return True
+        return arg
     else:
-        return False
+        raise argparse.ArgumentTypeError(f"Cannot create file at {arg}")
+
+def add_shared_arguments(parser):
+    """
+    Adds shared command-line arguments to the provided argument parser.
+    Parameters:
+    parser (argparse.ArgumentParser): The argument parser to which the arguments will be added.
+    """
+    parser.add_argument('-p', '--problem', required=True, metavar='problem.pddl',
+                         help='Path to PDDL problem file', type=_is_valid_file)
+    parser.add_argument('-d', '--domain', required=True, metavar='domain.pddl',
+                         help='Path to PDDL domain file', type=_is_valid_file)
+
+    conf = Config() # temporarily create a Config object to get the valid encodings
+    valid_encodings = conf.get_valid_configs()
+    parser.add_argument('-e', '--encoding',
+                        choices=valid_encodings.keys(),
+                        required=True,
+                        help='Specify the encoding to use. Options are: ' +
+                             ', '.join([f'{key} :{desc}' for key, desc in valid_encodings.items()]))
+
+    parser.add_argument('-v', '--verbose', type=int, choices=range(0, 5),
+                         default=1, help='Verbosity level (integer between 0 - 4).')
 
 def create_parser():
     """
-    Specifies valid arguments for pyPMTcli
-    Default values for parameters are stored in the config class
+    Specifies valid arguments for the pyPMT CLI
     """
-
     parser = argparse.ArgumentParser(description = DESCRIPTION,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
 
-    parser.add_argument('--problem', required=True, metavar='problem.pddl', help='Path to PDDL problem file', type=_is_valid_file)
-    parser.add_argument('--domain', required=True, metavar='domain.pddl', help='Path to PDDL domain file', type=_is_valid_file)
+    # Subparser for the "dump" command
+    parser_dump = subparsers.add_parser('dump', help='Dump the SMT encoding of a single step to a file')
+    add_shared_arguments(parser_dump)
+    parser_dump.add_argument('--output_file', required=True,
+                             help='Dump the encoding to the specified file.', 
+                             type=can_create_file)
+    parser_dump.add_argument('--step', type=int, required=True,
+                             help='Specify the step number that is going to be encoded.')
 
-    # Optional arguments. process_arguments forces one of the encodings to be true.
-    parser.add_argument('--seq', action='store_true', help='Use the sequential SMT encoding.')
-    parser.add_argument('--forall', action='store_true', help='Use the parallel SMT encoding with forall-step semantics.')
-    parser.add_argument('--r2e', action='store_true', help='Use the R2E encoding.')
-    parser.add_argument('--uf', action='store_true',  help='Use the lifted encoding with quantifiers.')
-    parser.add_argument('--qfuf', action='store_true',  help='Use the quantifier-free lifted encoding.')
-    parser.add_argument('--omtseq', action='store_true',  help='Use the sequential OMT encoding.')
-
-
-    parser.add_argument('--dump', type=str, help='Instead of searching, dump the encoding to the specified file. You will want to specify the --bound parameter to set up the number of layers.')
-
-    parser.add_argument('--verbose', type=int, default=1, help='Verbosity level (integer between 0 - 4).')
-    parser.add_argument('--bound', type=int, default=100, help='Upper bound.')
+    # Subparser for the "solve" command
+    parser_solve = subparsers.add_parser('solve', help='Try to solve a given planning problem')
+    add_shared_arguments(parser_solve)
+    parser_solve.add_argument('--bound', type=int, default=100, help='Upper bound.')
 
     return parser
 
-def process_arguments(args):
+def process_arguments(args, conf):
     """ gets the parsed command line arguments and sets the config object """
-
-    if args.verbose: # set the verbosity level
-        config.set('verbose', args.verbose)
-
-    if args.bound: # parse the bound, which is both used for the dump bound and the upper bound when doing search
-        config.set('ub', args.bound)
-
-    dump = None # parse the specified dump path
-    if args.dump:
-        if can_create_file(args.dump):
-            dump = args.dump
-        else:
-            raise argparse.ArgumentTypeError(f"{args.dump} is not a valid dump path")
+    if args.verbose:  # set the verbosity level
+        conf.set('verbose', args.verbose)
 
     # decide on the correct encoding
-    configuration = None
-    if args.seq:
-        configuration = "seq"
-    elif args.forall:
-        configuration = "forall"
-    elif args.r2e:
-        configuration = "r2e"
-    elif args.uf:
-        configuration = "uf"
-    elif args.qfuf:
-        configuration = "qfuf"
-    elif args.omtseq:
-        configuration = "omtseq"
-    else:
-        raise argparse.ArgumentError("No encoding specified!")
+    conf.set_config(args.encoding)
 
-    return dump, configuration
+    if args.command == 'solve' and args.bound:  # parse the bound
+        conf.set('ub', args.bound)
 
-def dump_encoding(domain, problem, config, path):
-    """!
-    Given a domain, problem and config, dump a SMTLIB2 file
-    """
-    # the bound will get retrieved in the method
-    dump_smtlib(domain, problem, path, config_name=config)
+    if args.command == 'dump' and args.output_file and args.step: 
+        # set the output file for the dump action
+        conf.set('output_file', args.output_file)
+        conf.set('encoded_step', args.step)
 
-def solve_problem(domain, problem, config):
-    """!
-    Given a domain, problem and config, try to solve the planning problem
-    """
-    plan = solve(domain, problem, config)
+def dump_encoding(domain, problem, conf):
+    """!  Given a domain, problem and config, dump a SMTLIB2 file """
+    dump_smtlib(domain, problem, conf)
 
-    if plan is not None:
-        print('The plan is valid')
-        print(plan)
-    else:
-        print('No valid plan could be found')
+def solve_problem(domain, problem, conf):
+    """!  Given a domain, problem and config, try to solve the planning problem """
+    plan = solve(domain, problem, conf)
+#    if plan is not None:
+#        print('The plan is valid')
+#        print(plan)
+#    else:
+#        print('No valid plan could be found')
 
 def main(args=None):
-    """
-    Main planning routine
-    """
-
+    """ Entry point """
     if args is None:
         args = sys.argv[1:]
+
+    # A new empty configuration object
+    conf = Config()
 
     # Parse planner args
     parser = create_parser()
     args = parser.parse_args(args)
-    # if this gets more complex might be beneficial to implement a git-like approach
-    # as in having various actions for the CLI, such as "solve" or "dump"
-    dump_path, configuration = process_arguments(args)
 
-    if dump_path:
-        dump_encoding(args.domain, args.problem, configuration, dump_path)
+    # now parse the arguments and set the configuration
+    process_arguments(args, conf)
+
+    if args.command == 'dump':
+        dump_encoding(args.domain, args.problem, conf)
+    elif args.command == 'solve':
+        solve_problem(args.domain, args.problem, conf)
     else:
-        solve_problem(args.domain, args.problem, configuration)
+        parser.print_help()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

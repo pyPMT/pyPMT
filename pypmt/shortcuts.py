@@ -10,6 +10,4 @@ from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.lifted import LiftedSearch
 from pypmt.planner.QFUF import QFUFSearch
 
-from pypmt.config import config
-
-from pypmt.shared.valid_configs import valid_configs
+from pypmt.config import Config

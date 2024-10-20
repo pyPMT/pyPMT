@@ -1,5 +1,4 @@
 import time
-
 import z3
 
 from pypmt.planner.utilities import dumpProblem

@@ -1,7 +1,5 @@
 from unified_planning.plans import SequentialPlan
-from pypmt.config import config
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
-
 
 class Search:
     """
@@ -15,7 +13,9 @@ class Search:
         self.horizon    = None
         self.scheduler  = scheduler
         self.solution   = SMTSequentialPlan(SequentialPlan([]), None)
-        self.propagator = config.get("propagator")
+
+        from pypmt.config import global_config
+        self.propagator = global_config.get("propagator")
     
     def search(self):
         raise NotImplementedError
