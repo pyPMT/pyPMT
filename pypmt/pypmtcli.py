@@ -66,8 +66,8 @@ def add_shared_arguments(parser):
     parser.add_argument('-e', '--encoding',
                         choices=valid_encodings.keys(),
                         required=True,
-                        help='Specify the encoding to use. Options are: ' +
-                             ', '.join([f'{key} :{desc}' for key, desc in valid_encodings.items()]))
+                        help='Specify the encoding to use. ' +
+                             ''.join([f'{key}: {desc}, ' for key, desc in valid_encodings.items()]))
 
     parser.add_argument('-v', '--verbose', type=int, choices=range(0, 5),
                          default=1, help='Verbosity level (integer between 0 - 4).')

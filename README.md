@@ -1,47 +1,51 @@
-# pyPMT
-A Python library for Planning Modulo Theories using SMT
+# pyPMT: A Python Library for Planning Modulo Theories using SMT
 
-## Installing pyPMT
+## Installation
 
-Install the package using `pip`:
-```
+Install pyPMT using `pip`:
+
+```sh
 python -m pip install .
 ```
 
-## Using pyPMT
+## Usage
 
-##### Getting help
+### Getting Help
 
-To see the list of input arguments, type
+To see the list of input arguments, type:
 
-```
+```sh
 pypmtcli -h
 ```
 
-##### Running pyPMT
+### Running pyPMT
 
-To run pyPMT on a problem from the CLI, type, e.g.,
-```
-pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.pddl
-```
+To run pyPMT on a problem from the CLI, type, for example:
 
-To produce an SMT-LIB encoding of the problem (instead of solving it), type, e.g.
-
-```
-pypmtcli --seq --bound 3 --domain path_to_domain.pddl --problem path_to_problem.pddl --dump output.smt2
+```sh
+pypmtcli solve --encoding seq --domain domain.pddl --problem problem.pddl
 ```
 
-pyPMT can be used as a library too. See [here](https://github.com/pyPMT/quick-start) for some examples.
+To produce an SMT-LIB encoding of the problem (instead of solving it), type, for example:
+
+```sh
+pypmtcli dump --encoding seq --domain domain.pddl --problem problem.pddl --output_file foo.smt2 --step 10
+```
+
+pyPMT can also be used as a library. See [quick-start examples](https://github.com/pyPMT/quick-start) for more details.
 
 ## Documentation
 
 Further documentation is available [here](https://github.com/pyPMT/pyPMT/blob/main/refman.pdf).
 
-
 ## Authors
 
-[Mustafa F Abdelwahed](https://github.com/MFaisalZaki)
-[Joan Espasa Arxer](https://joanespasa.github.io/)
-[Francesco Leofante](https://fraleo.github.io)
+- [Mustafa F Abdelwahed](https://github.com/MFaisalZaki)
+- [Joan Espasa Arxer](https://joanespasa.github.io/)
+- [Francesco Leofante](https://fraleo.github.io)
 
-Do not hesitate to contact us if you have problems using pyPMT, or if you find bugs :)
+Feel free to contact us if you encounter any issues or find bugs.
+
+## Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING](https://github.com/pyPMT/pyPMT/blob/main/CONTRIBUTING.md) guide for more details.

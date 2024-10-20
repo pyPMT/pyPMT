@@ -5,11 +5,10 @@ from pypmt.planner.utilities import dumpProblem
 from pypmt.utilities import log
 from pypmt.planner.base import Search
 
-class SMTSearch(Search):
+class SMTSearchActionPropagator(Search):
     """
     Basic grounded incremental search
     """
-
     def search(self):
         self.horizon = 0
 
@@ -24,6 +23,19 @@ class SMTSearch(Search):
 
             if not self.solver:
                 self.solver = z3.Solver(ctx=context) if 'objective' not in formula else z3.Optimize(ctx=context)
+            if not self.propagator:
+                # If we did not instantiate the propagator, we do it here and 
+                from pypmt.config import global_config
+                action_propagator = global_config.get('propagator')
+                self.propagator = action_propagator(self.encoder, s=self.solver)
+                # then we add the action variables to the propagator
+                for a in self.encoder.task.actions:
+                    action = self.encoder.get_action_var(a.name, 0)
+                    self.propagator.add(action)
+            else:
+                for a in self.encoder.task.actions:
+                    action = self.encoder.get_action_var(a.name, horizon)
+                    self.propagator.add(action)
             
             # deal with the initial state
             if self.horizon == 0:
