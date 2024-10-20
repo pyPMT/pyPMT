@@ -15,7 +15,10 @@ def run_planner(name, pddldir):
     tasks_results = defaultdict()
     for domainname, domainfile, problemfile in tasks:
         plan = solve(domainfile, problemfile, Config(name), validate_plan=True)
-        tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
+        if plan is not None:
+            tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
+        else:
+            tasks_results[domainname] = (False, "Either unsolvable or Invalid plan")
 
     failed_domains = []
     for domainname, (result, validation_fail_reason) in tasks_results.items():

@@ -13,9 +13,7 @@ class Search:
         self.horizon    = None
         self.scheduler  = scheduler
         self.solution   = SMTSequentialPlan(SequentialPlan([]), None)
-
-        from pypmt.config import global_config
-        self.propagator = global_config.get("propagator")
+        self.propagator = None
     
     def search(self):
         raise NotImplementedError

@@ -9,9 +9,11 @@ from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
 
 from pypmt.planner.SMT import SMTSearch
+from pypmt.planner.SMTActionPropagator import SMTSearchActionPropagator
 from pypmt.planner.lifted import LiftedSearch
 from pypmt.planner.QFUF import QFUFSearch
 from pypmt.planner.OMT import OMTSearch
+from pypmt.propagators.base import BasePropagator
 
 class Config:
     """
@@ -61,6 +63,12 @@ class Config:
             "compilationlist": grounded_encoders_default_compilation_list,
             "propagator": None
         },
+        "seqProp": {
+            "encoder": EncoderSequential,
+            "search": SMTSearchActionPropagator,
+            "compilationlist": grounded_encoders_default_compilation_list,
+            "propagator": BasePropagator
+        },
         "forall": {
             "encoder": EncoderForall,
             "search": SMTSearch,
@@ -95,6 +103,7 @@ class Config:
 
     valid_configs_description = {
         "seq": "Use the sequential SMT encoding",
+        "seqProp": "A sequential SMT encoding with the Base propagator",
         "forall": "Use the parallel SMT encoding with forall-step semantics",
         "r2e": "Use the R2E encoding",
         "uf": "Use the lifted encoding with quantifiers",
