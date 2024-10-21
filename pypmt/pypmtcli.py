@@ -3,7 +3,7 @@ import sys
 import argparse
 
 from pypmt.config import Config
-from pypmt.apis import solve, dump_smtlib
+from pypmt.apis import solveFile, dump_smtlib
 
 DESCRIPTION = "pyPMT Driver Script"
 
@@ -118,7 +118,7 @@ def dump_encoding(domain, problem, conf):
 
 def solve_problem(domain, problem, conf):
     """!  Given a domain, problem and config, try to solve the planning problem """
-    plan = solve(domain, problem, conf)
+    plan = solveFile(domain, problem, conf)
 #    if plan is not None:
 #        print('The plan is valid')
 #        print(plan)

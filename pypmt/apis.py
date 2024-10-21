@@ -83,8 +83,7 @@ def initialize_fluents(task:Problem):
     for fe in unintialized_fluents:
         task.set_initial_value(fe, task.initial_defaults[fe.type]) 
 
-def create_encoder(encoder, domainfile:str, problemfile:str, compilationlist:list):
-    task = PDDLReader().parse_problem(domainfile, problemfile)
+def create_encoder(encoder, task, compilationlist:list):
     # initialise the fluents if needed
     initialize_fluents(task)
     # TODO: we need to find a way to validate the compilation list compatibility with the encoder before proceeding.
@@ -98,7 +97,11 @@ def generate_schedule(conf:Config):
     ub = conf.get("ub")
     return list(range(0, ub))
 
-def solve(domainfile:str, problemfile:str, conf:Config, validate_plan:bool=True):
+def solveFile(domainfile:str, problemfile:str, conf:Config, validate_plan:bool=True):
+    task = PDDLReader().parse_problem(domainfile, problemfile)
+    return solveUP(task, conf, validate_plan)
+
+def solveUP(task, conf:Config, validate_plan:bool=True):
     """!
     Basic entry point to start searching
     Beforehand the config has to be set by doing for example:
@@ -120,15 +123,17 @@ def solve(domainfile:str, problemfile:str, conf:Config, validate_plan:bool=True)
 
     # create the encoder and run the search
     schedule = generate_schedule(global_config)
-    encoder_instance, compiled_task = create_encoder(encoder, domainfile, problemfile, compilationlist)
+    encoder_instance, compiled_task = create_encoder(encoder, task, compilationlist)
     plan = search_strategy(encoder_instance, schedule).search()
 
     # validate plan if there is a plan and we're asked to
     if plan and validate_plan:
         plan.validate()
-        # lift the plan to it's original task.
+
+    # lift the plan to it's original task.
+    if plan is not None:
         plan.plan = plan.plan.replace_action_instances(compiled_task.map_back_action_instance)
-        
+
     if plan is None:
         log('No solution found', 1)
         return None
@@ -153,7 +158,8 @@ def dump_smtlib(domainfile:str, problemfile:str, conf:Config):
     step = global_config.get("encoded_step")
 
     schedule = generate_schedule(global_config)
-    encoder_instance, _ = create_encoder(encoder, domainfile, problemfile, compilationlist)
+    task = PDDLReader().parse_problem(domainfile, problemfile)
+    encoder_instance, _ = create_encoder(encoder, task, compilationlist)
     # create an instance of the search strategy and dump the generated SMTLIB code
     # TODO: I think this should be done in the encoder and not in the search strategy.
     search_strategy(encoder_instance, schedule).dump_smtlib_to_file(step, output_file)

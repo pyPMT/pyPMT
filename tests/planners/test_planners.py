@@ -4,7 +4,7 @@ import pytest
 from collections import defaultdict
 from timeit import default_timer as timer
 
-from pypmt.apis import solve
+from pypmt.apis import solveFile
 from pypmt.config import Config
 from pypmt.shortcuts import *
 
@@ -14,7 +14,7 @@ def run_planner(name, pddldir):
     tasks = read_tasks_files(pddldir)
     tasks_results = defaultdict()
     for domainname, domainfile, problemfile in tasks:
-        plan = solve(domainfile, problemfile, Config(name), validate_plan=True)
+        plan = solveFile(domainfile, problemfile, Config(name), validate_plan=True)
         if plan is not None:
             tasks_results[domainname] = (plan.isvalid, plan.validation_fail_reason)
         else:
