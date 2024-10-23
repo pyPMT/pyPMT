@@ -98,6 +98,7 @@ def create_parser():
 
 def process_arguments(args, conf):
     """ gets the parsed command line arguments and sets the config object """
+    print(args)
     if args.verbose:  # set the verbosity level
         conf.set('verbose', args.verbose)
 
@@ -119,11 +120,6 @@ def dump_encoding(domain, problem, conf):
 def solve_problem(domain, problem, conf):
     """!  Given a domain, problem and config, try to solve the planning problem """
     plan = solveFile(domain, problem, conf)
-#    if plan is not None:
-#        print('The plan is valid')
-#        print(plan)
-#    else:
-#        print('No valid plan could be found')
 
 def main(args=None):
     """ Entry point """
@@ -136,6 +132,11 @@ def main(args=None):
     # Parse planner args
     parser = create_parser()
     args = parser.parse_args(args)
+
+    # Ensure a command is provided
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
 
     # now parse the arguments and set the configuration
     process_arguments(args, conf)
