@@ -82,6 +82,18 @@ class EncoderGrounded(Encoder):
             else:
                 raise TypeError
 
+    def get_state_var(self, name, t):
+        """!
+        Given a str representation of a fluent/action and a timestep,
+        returns the respective Z3 var.
+
+        @param name: str representation of a fluent or action
+        @param t: the timestep we are interested in
+        @returns: the corresponding Z3 variable
+        """
+        return self.up_fluent_to_z3[name][t]
+
+
     def get_action_var(self, name, t):
         """!
         Given a str representation of a fluent/action and a timestep,

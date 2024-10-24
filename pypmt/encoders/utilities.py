@@ -5,7 +5,7 @@ import z3
 from unified_planning.shortcuts import InstantaneousAction, FNode
 
 @lru_cache()
-def str_repr(f, t=None):
+def str_repr(f, t=None) -> str:
     """! 
     given a FNode from UP representing a fluent and a possible timestep return a
     string representation of it. 
