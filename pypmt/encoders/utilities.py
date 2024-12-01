@@ -14,7 +14,7 @@ def str_repr(f, t=None):
         s = f.fluent().name
         # we concatenate the parameters to the name
         for fluent_arg in f.args:
-            s += f"_{fluent_arg.constant_value()}"
+            s += str(fluent_arg) if fluent_arg.is_variable_exp() else f"_{fluent_arg.constant_value()}"
 
     elif isinstance(f, InstantaneousAction): # for actions
         s = f.name
