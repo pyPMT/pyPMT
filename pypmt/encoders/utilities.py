@@ -29,12 +29,13 @@ def str_repr(f, t=None) -> str:
     return s
 
 @lru_cache()
-def varstr_repr(var):
+def var_components(var):
     """! 
-    given a z3 variable return the variable name. 
+    given a z3 variable return the variable name and the timestep. 
     """
     varname = str(var)
-    return varname[:varname.rfind('_')]
+    idx_last_separator = varname.rfind('_')
+    return varname[:idx_last_separator], int(varname[idx_last_separator+1:])
 
     
 def remove_delete_then_set(effects):
