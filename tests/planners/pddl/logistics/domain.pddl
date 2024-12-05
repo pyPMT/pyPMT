@@ -3,24 +3,24 @@
 
 (define (domain logistics)
   (:requirements :strips :typing) 
-  (:types truck
-          airplane - vehicle
-          package
-          vehicle - physobj
-          airport
-          location - place
-          city
-          place 
-          physobj - object)
+  (:types truck airplane - vehicle
+          package vehicle - physobj
+          airport location - place
+          city place physobj - object)
   
-  (:predicates 	(in-city ?loc - place ?city - city)
+  (:predicates 	
+    (in-city ?loc - place ?city - city)
 		(at ?obj - physobj ?loc - place)
 		(in ?pkg - package ?veh - vehicle))
   
 (:action LOAD-TRUCK
    :parameters    (?pkg - package ?truck - truck ?loc - place)
-   :precondition  (and (at ?truck ?loc) (at ?pkg ?loc))
-   :effect        (and (not (at ?pkg ?loc)) (in ?pkg ?truck)))
+   :precondition  (and 
+                      (at ?truck ?loc)
+                      (at ?pkg ?loc))
+   :effect        (and 
+                      (not (at ?pkg ?loc))
+                      (in ?pkg ?truck)))
 
 (:action LOAD-AIRPLANE
   :parameters   (?pkg - package ?airplane - airplane ?loc - place)

@@ -59,6 +59,9 @@ class SMTSearchStateAndActionPropagator(Search):
                     state_var = self.encoder.get_state_var(fluent_str, horizon)
                     self.propagator.add(state_var)
             
+            # we signal to the propagator that we are in a new timestep, (initial state too)
+            self.propagator.new_timestep()
+
             # deal with the initial state
             if self.horizon == 0:
                 self.solver.add(formula['initial'])
