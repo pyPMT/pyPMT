@@ -111,10 +111,10 @@ def solveUP(task, conf:Config, validate_plan:bool=True):
     from pypmt.planner.SMT import SMTSearch
 
     or passing them as parameters:
-    from pypmt.apis import solve
+    from pypmt.apis import solveFile
     from unified_planning.shortcuts import CompilationKind
-    sol = solve(domainfile, problemfile, "qfuf", []) 
-    sol = solve(domainfile, problemfile, "seq",  [('up_grounder', CompilationKind.GROUNDING)])
+    sol = solveFile(domainfile, problemfile, "qfuf") 
+    sol = solveFile(domainfile, problemfile, "seq")
     """
     set_global_config(conf)
     encoder = global_config.get("encoder")

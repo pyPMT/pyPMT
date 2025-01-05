@@ -2,7 +2,7 @@ from collections import Counter
 from functools import lru_cache
 
 import z3
-from unified_planning.shortcuts import InstantaneousAction, FNode
+from unified_planning.shortcuts import InstantaneousAction, FNode, OperatorKind
 
 @lru_cache()
 def str_repr(f, t=None):
@@ -14,8 +14,14 @@ def str_repr(f, t=None):
         s = f.fluent().name
         # we concatenate the parameters to the name
         for fluent_arg in f.args:
-            s += str(fluent_arg) if fluent_arg.is_variable_exp() else f"_{fluent_arg.constant_value()}"
-
+            match fluent_arg.node_type:
+                case OperatorKind.VARIABLE_EXP:
+                    s += str(fluent_arg)
+                case OperatorKind.NOT:
+                    s += str_repr(fluent_arg.args[0])
+                case _:
+                    s += f"_{fluent_arg.constant_value()}"
+                
     elif isinstance(f, InstantaneousAction): # for actions
         s = f.name
         # we concatenate the parameters to the name
