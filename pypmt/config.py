@@ -11,6 +11,7 @@ from pypmt.encoders.OMT import EncoderSequentialOMT
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.SMTActionPropagator import SMTSearchActionPropagator
 from pypmt.planner.SMTStateAndActionPropagator import SMTSearchStateAndActionPropagator
+from pypmt.planner.SMTStatePropagator import SMTSearchStatePropagator
 from pypmt.planner.lifted import LiftedSearch
 from pypmt.planner.QFUF import QFUFSearch
 from pypmt.planner.OMT import OMTSearch
@@ -73,7 +74,8 @@ class Config:
         },
         "seqH2Prop": {
             "encoder": EncoderSequential,
-            "search": SMTSearchStateAndActionPropagator,    
+            #"search": SMTSearchStateAndActionPropagator,    
+            "search": SMTSearchStatePropagator,    
             "compilationlist": grounded_encoders_default_compilation_list,
             "propagator": H2Propagator
         },

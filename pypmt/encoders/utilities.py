@@ -21,6 +21,8 @@ def str_repr(f, t=None) -> str:
         # we concatenate the parameters to the name
         for arg in f.parameters:
             s += f"_{arg.constant_value()}"
+    elif isinstance(f, str):
+        s = f
     else:
         raise TypeError(f"Unsupported thing: {f} of type {type(f)}")
         

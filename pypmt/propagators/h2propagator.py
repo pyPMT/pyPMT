@@ -3,6 +3,7 @@ import itertools
 from pypmt.encoders.utilities import var_components, str_repr
 from typing import List, Dict
 from collections import defaultdict
+from functools import lru_cache
 
 class H2Propagator(z3.UserPropagateBase):
     """!
@@ -22,7 +23,7 @@ class H2Propagator(z3.UserPropagateBase):
         self.solver = s
 
         # output stuff?
-        self.verbose = False
+        self.verbose = True
 
         # keep track of changes/assignments made during the decision process
         # each entry is an action or change that can be undone.
@@ -42,9 +43,9 @@ class H2Propagator(z3.UserPropagateBase):
 
         # variables that belong to the propagator per se.
         # each entry is a dictionary with the state variables and their value per step
-        self.state_state: List[Dict[str, str]] = []
+        self.state_state: List[Dict[str, str]] = [{}]
         # number of fixed variables per timestep
-        self.counter: List[int] = []
+        self.counter: List[int] = [0]
 
         self.action_pre = defaultdict(list) # given an action, return the list of preconditions
         self.action_add = defaultdict(list) # given an action, return the list of add effects
@@ -53,25 +54,33 @@ class H2Propagator(z3.UserPropagateBase):
         self.create_indices() # fill the dictionaries
 
         self.last_timestep = 0          # the greatest timestep seen
-        self.goal_predicates = set()    # a set of predicates in the goal, assuming STRIPS
-        self.preprocess_goals()        # fill the goal_predicates set
+        self.goal_predicates = None     # a set of predicates in the goal, assuming STRIPS
+        self.preprocess_goals()         # fill the goal_predicates set
         
         self.flag_esperem_conflicte=False
 
+        # size (m) of the combination of goal facts considered by the heuristic h_m
+        self.SUBSETSIZE = 2
+
         # debug
         self.printed_step = []
+        self.true_val = z3.BoolVal(True, ctx=self.encoder.ctx)
+        self.false_val = z3.BoolVal(False, ctx=self.encoder.ctx)
 
     def preprocess_goals(self):
+        goal_predicates = set()
         for goal in self.encoder.task.goals:
             if goal.is_and():
                 for x in goal.args:
-                    self.goal_predicates.add(x) 
+                    goal_predicates.add(str_repr(x)) 
             else:
                 # MEEEC
                 pass
+        self.goal_predicates = frozenset(goal_predicates)
     
     def _decide(self, t, var, phase):
         varname, timestep = var_components(t)
+        # TODO, first assign the goal literals
         if varname in self.encoder.up_actions_to_z3.keys():
             if self.verbose:
                 print(f"we tell the solver to decide on action {t} to be true!")
@@ -80,16 +89,19 @@ class H2Propagator(z3.UserPropagateBase):
     def push(self): # type: ignore
         # mark a new decision level in the trail.
         self.decision_levels.append(len(self.trail))
-        if self.verbose:
-            print("pushed decision level")
+        #if self.verbose:
+            #print("pushed decision level")
         if self.flag_esperem_conflicte:
             self.flag_esperem_conflicte=False
             print(f"No hi ha conflicte, decisio nivell {len(self.decision_levels)}")
 
     # -- Backjumping --
     def pop(self, num_scopes) -> None: # type: ignore
-        if self.verbose:
-            print(f"popped decision level: {num_scopes} scopes")
+        #print(f"popping decision level: {num_scopes} scopes")
+        #print("self.decision_levels", self.decision_levels)
+        #print(f"trail: {self.trail}")
+        #counts = defaultdict(int)
+
         # head is the position of the trail that we have to backtrack to
         head = self.decision_levels[len(self.decision_levels) - num_scopes]
         # while we have not reached the head, undo the last action
@@ -99,11 +111,15 @@ class H2Propagator(z3.UserPropagateBase):
             self.state_state[timestep][varname] = ""
             self.counter[timestep] -= 1
             self.trail.pop()
+            #counts[timestep] += 1
+
+        #print(f"popped levels: {counts}")
 
         self.decision_levels = self.decision_levels[:-num_scopes]
         if self.flag_esperem_conflicte:
             self.flag_esperem_conflicte=False
-            print(f"Hi ha conflicte a {len(self.decision_levels)}")
+            if self.verbose:
+                print(f"Hi ha conflicte a {len(self.decision_levels)}")
 
     def _fixed(self, x, v):
         """
@@ -112,67 +128,99 @@ class H2Propagator(z3.UserPropagateBase):
         # Implement logic for when a variable is fixed to a value
         varname, timestep = var_components(x)
 
+        #print(f"fixed {x} to {v}")
         # this is a state variable
         if varname in self.encoder.up_fluent_to_z3.keys():
             self.state_state[timestep][varname] = v
-            self.counter[timestep]+=1
+            self.counter[timestep] += 1
             self.trail.append(x)
+
             if(self.is_state_defined(timestep)):
-                self.compute_heuristic(timestep)
+                #print(f"step {timestep} has {self.counter[timestep]}/{len(self.encoder.up_fluent_to_z3.keys())} defined")
+                heuristic = self.compute_heuristic(timestep)
+                #print(f"heuristic: {heuristic} calculated from step {timestep} and state {self.state_state[timestep]} seen with horizon {self.last_timestep}")
+                if heuristic > self.last_timestep - timestep:
+                    if self.verbose:
+                        print(f"Hauriem de fer conflicte a decision level: {len(self.decision_levels)}")
+                    self.flag_esperem_conflicte=True
+
+                    fixed_ids_at_timestep = [] # the literals fixed at the given timestep
+                    for str_var, value in self.state_state[timestep].items():
+                        z3_var = self.encoder.up_fluent_to_z3[str_var][timestep]
+                        fixed_ids_at_timestep.append(z3_var)
+
+                    # add the goal to the conflict
+                    lits = []
+                    for goal_pred in self.goal_predicates:
+                        lits.append(z3.Not(self.encoder.up_fluent_to_z3[str_repr(goal_pred)][self.last_timestep], ctx=self.encoder.ctx))
+                    negated_goal = z3.Or(lits)
+
+                    #if self.verbose:
+                    #    print(f"pacasa, timestep {timestep} with conflict {literals}")
+                    #print(f"state: {self.state_state[timestep]}")
+                    print(f"pacasa: propaguem: {negated_goal} with {fixed_ids_at_timestep}")
+                    self.propagate(negated_goal, ids=fixed_ids_at_timestep) # let z3 know that there is a conflict
+                    
+                if not self.printed_step[timestep]:
+                    if self.verbose:
+                        self.print_state(timestep)
+                    self.printed_step[timestep] = True
 
     
     def compute_heuristic(self, timestep):
         #heuristic = self.compute_goal_count(timestep)
-        heuristic = self.compute_hm(2,timestep)
-        
-        if heuristic > self.last_timestep - timestep:
-            print(f"Hauriem de fer conflicte aqui: {len(self.decision_levels)}")
-            self.flag_esperem_conflicte=True
-
-        if not self.printed_step[timestep]:
-            if self.verbose:
-                self.print_state(timestep)
-            self.printed_step[timestep] = True
+        return self.compute_hm(self.SUBSETSIZE, timestep)
+       
 
     def compute_hm(self, m, timestep):
+        @lru_cache(maxsize=None)
         def regression(goal, action):
-            if len(goal.intersection(self.action_add[action]))==0 or \
-            len(goal.intersection(self.action_del[action]))!=0:
+            str_action = str_repr(action)
+            goal_str = frozenset([str_repr(x) for x in goal])
+            if len(goal_str.intersection(self.action_add[str_action]))==0 or \
+               len(goal_str.intersection(self.action_del[str_action]))!=0:
                 return -1
-            return (goal.difference(self.action_add[action])).union(self.action_pre[action])
+            return (goal_str.difference(self.action_add[str_action])).union(self.action_pre[str_action])
 
-        def compute_hm_(m, timestep, goal):
+        @lru_cache(maxsize=None)
+        def compute_hm_(m, timestep, goal, credit):
+            #print(f"crida recursiva amb: m:{m}, step:{timestep} goal:{goal} i credit:{credit}")
             # if the goal is already satisfied, return 0. That is, if the goal is a strict subset of the true facts of the state
-            s = set([fact for fact in self.state_state[timestep].keys() if self.state_state[timestep][fact]])
+            s = frozenset([fact for fact in self.state_state[timestep].keys() if self.state_state[timestep][fact]])
             if goal.issubset(s):
-                print(f"setbase: 0, {s}")
+                #print(f"trobat: {goal} is subset of {s}")
                 return 0
+
+            # we are further from the bound we have
+            if credit == 0:
+                #print(f"ens hem quedat sense credit")
+                return self.last_timestep + 1 # infinity
+
             elif len(goal) <= m:
-                entered = False
+                #print(f"len(goal) <= m: {len(goal)} <= {m}")
                 min = self.last_timestep
                 setmin = set()
                 for action in self.encoder.task.actions:
                     r = regression(goal, action)
-                    # TODO what would happen if all goals are undefined?
+                    #print(f"len(goal) <= m: regression: {r}")
                     # That is, there is no action that can help us reach the goal (regression would always give -1)
                     if r != -1:
-                        entered = True
-                        hm = compute_hm_(m,timestep,r)
+                        hm = compute_hm_(m, timestep, r, credit-1)
                         if hm < min:
                             (min,setmin) = (hm,r)
-                print(f"setmin: {entered} {min} {setmin}")
-                return min+1
+                #print(f"len(goal) <= m: return {min+1}")
+                return min + 1
             else:
                 max = -1
                 setmax = set()
                 for actions_prime in itertools.combinations(goal, m):
-                    hm = compute_hm_(m,timestep,set(actions_prime))
+                    hm = compute_hm_(m, timestep, frozenset(actions_prime), credit)
                     if hm > max:
-                        (max,setmax) = (hm,set(actions_prime))
-                print(f"setmax: {max} {setmax}")
+                        (max,setmax) = (hm,frozenset(actions_prime))
+                #print(f"len(goal) > m: return {max}")
                 return max
-        
-        return compute_hm_(m, timestep, self.goal_predicates)
+
+        return compute_hm_(m, timestep, self.goal_predicates, self.last_timestep - timestep)
 
 
     # returns the number of goals NOT satisfied in the current state

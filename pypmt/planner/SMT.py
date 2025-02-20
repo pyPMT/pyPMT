@@ -56,7 +56,7 @@ class SMTSearch(Search):
             total_time = total_time + solving_time + encoding_time
             log(f'Step {horizon+1}/{(self.scheduler[-1]+1)} encoding: {encoding_time:.2f}s, solving: {solving_time:.2f}s', 2)
             if res == z3.sat:
-                log(f'Satisfiable model found. Took:{total_time:.2f}s', 3)
+                log(f'Satisfiable model found at step {horizon+1}. Took:{total_time:.2f}s', 3)
                 log(f'Z3 statistics:\n{self.solver.statistics()}', 4)
                 self.solution = self.encoder.extract_plan(self.solver.model(), self.horizon)
                 break

@@ -92,6 +92,9 @@ class SMTSearchStateAndActionPropagator(Search):
             solving_time = end_time - start_time
             total_time = total_time + solving_time + encoding_time
             log(f'Step {horizon+1}/{(self.scheduler[-1]+1)} encoding: {encoding_time:.2f}s, solving: {solving_time:.2f}s', 2)
+            if horizon+1 > 5:
+                log(f'MEEEC', 1)
+                return None
             if res == z3.sat:
                 log(f'Satisfiable model found. Took:{total_time:.2f}s', 3)
                 log(f'Z3 statistics:\n{self.solver.statistics()}', 4)
