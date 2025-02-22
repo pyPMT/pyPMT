@@ -3,17 +3,15 @@ import z3
 from copy import deepcopy
 from collections import defaultdict
 
-from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.shortcuts import Effect, EffectKind
 from unified_planning.shortcuts import FNode, Fraction
 from unified_planning.model.fluent import get_all_fluent_exp
-from unified_planning.engines.results import CompilerResult
 
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
 from pypmt.encoders.base import Encoder
-from pypmt.encoders.utilities import str_repr, flattern_list, remove_delete_then_set
+from pypmt.encoders.utilities import str_repr, flattern_list
 from pypmt.modifiers.modifierLinear import LinearModifier
 from pypmt.modifiers.modifierParallel import ParallelModifier
 
@@ -262,8 +260,6 @@ class EncoderGrounded(Encoder):
             action_eff = []
             for eff in grounded_action.effects:
                action_eff.append(self._expr_to_z3(eff, t))
-            # remove any delete-then-set/set-then-delete semantics
-            action_eff = remove_delete_then_set(action_eff)
 
             # the proper encoding
             action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)
@@ -279,7 +275,7 @@ class EncoderGrounded(Encoder):
 
         basically for each fluent, to change in value it means
         that some action that can make it change has been executed
-        f(x,y,z, t) != f(x,y,z, t+1) -> a \/ b \/ c
+        f(x,y,z, t) != f(x,y,z, t+1) -> a \\/ b \\/ c
         """
         frame = [] # the whole frame
 

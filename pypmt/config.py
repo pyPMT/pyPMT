@@ -46,6 +46,7 @@ class Config:
         "search": "The search algorithm that the class will use",
         "compilationlist": "The list of compilation steps to apply to the task before encoding",
         "propagator": "If a propagator class has to be used to help during search",
+        "description": "A simple text that describes the configuration"
     }
 
     # valid configs that the library is able to operate with
@@ -54,7 +55,8 @@ class Config:
         ('up_disjunctive_conditions_remover', CompilationKind.DISJUNCTIVE_CONDITIONS_REMOVING), 
         ('up_grounder', CompilationKind.GROUNDING)
     ]
-    lifted_encoders_default_compilation_list = []
+    lifted_encoders_default_compilation_list = [
+    ]
 
     valid_configs = {
         "seq": {

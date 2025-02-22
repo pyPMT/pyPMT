@@ -48,21 +48,21 @@ class Encoder:
         """
         raise NotImplementedError
 
-    def encode_goal_state(self):
+    def encode_goal_state(self, t):
         """!
         Encodes the goal state.
         @returns the encoded formula/s
         """
         raise NotImplementedError
 
-    def encode_actions(self):
+    def encode_actions(self, t):
         """!
         Encodes the transition function.
         @returns the encoded formula/s
         """
         raise NotImplementedError
 
-    def encode_frame(self):
+    def encode_frame(self, t):
         """!
         Encodes the frame axioms.
         @returns the encoded formula/s

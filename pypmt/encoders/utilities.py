@@ -42,20 +42,5 @@ def varstr_repr(var):
     varname = str(var)
     return varname[:varname.rfind('_')]
 
-    
-def remove_delete_then_set(effects):
-    """!
-    Removes delete-then-set effects from the list of effects.
-    @param effects: list of effects
-    @return list of effects without delete-then-set effects
-    """
-    # collect boolean only effect fluents
-    collected_effect_fluents = filter(lambda f:isinstance(f.sort(), z3.z3.BoolSortRef), [e.children()[0] for e in effects])
-    # keep fluents with more than one appearance
-    deleted_then_set_fluents = list(map(lambda x:x[0], filter(lambda item: item[1] != 1, Counter(collected_effect_fluents).items())))
-    # remove delete-then-set effects
-    return list(filter(lambda e: not isinstance(e.children()[0].sort(), z3.z3.BoolSortRef) or 
-                                 not e.children()[0] in deleted_then_set_fluents, effects))
-
 def flattern_list(list_of_lists):
     return sum((flattern_list(sub) if isinstance(sub, list) else [sub] for sub in list_of_lists), [])

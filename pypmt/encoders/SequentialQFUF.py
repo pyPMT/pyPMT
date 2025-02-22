@@ -6,12 +6,10 @@ from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
 from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind, Fraction
-from unified_planning.shortcuts import Compiler, CompilationKind
 from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.engines.results import CompilerResult
 
-from pypmt.utilities import timethis, log
-from pypmt.encoders.utilities import flattern_list, remove_delete_then_set
+from pypmt.encoders.utilities import flattern_list
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 from pypmt.encoders.base import Encoder
 
@@ -353,8 +351,7 @@ class EncoderSequentialQFUF(Encoder):
             action_eff = []
             for eff in up_action.effects:
                action_eff.append(self._expr_to_z3(eff, t, ctx=ctx))
-            # remove any delete-then-set/set-then-delete semantics
-            action_eff = z3.And(remove_delete_then_set(action_eff))
+            action_eff = z3.And(action_eff)
 
             # for an action to be executable, it needs to be selected
             # and the types need to be correct

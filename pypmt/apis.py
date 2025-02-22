@@ -13,6 +13,7 @@ from pypmt.config import Config
 from pypmt.config import global_config  # Import the global configuration
 
 from pypmt.utilities import log
+from pypmt.compilers.delete_then_set_remover import DeleteThenSetRemover
 
 def compile(task: Problem, compilationlist: list):
     """
@@ -25,19 +26,20 @@ def compile(task: Problem, compilationlist: list):
     Returns:
         CompiledTask: The compiled task object.
     """
+    task = DeleteThenSetRemover().compile(task).problem # just remove delete-then-set effects
     names = [name for name, _ in compilationlist]
     compilationkinds = [kind for _, kind in compilationlist]
     with Compiler(names=names, compilation_kinds=compilationkinds) as compiler:
         compiled_task = compiler.compile(task)
     return compiled_task
 
-def check_compatibility(encoder, compliationlist:list):
+def check_compatibility(encoder, compilationlist:list):
     compatible = True
     reason = ['incompatibility reasons:']
     # First check is to know whether the encoder requires grounding or not.
     grounded_encoding = 'EncoderGrounded' in [c.__name__ for c in encoder.__mro__]
-    has_grounding = any([kind == CompilationKind.GROUNDING for _, kind in compliationlist])
-    has_quantifiers_removal = any([kind == CompilationKind.QUANTIFIERS_REMOVING for _, kind in compliationlist])
+    has_grounding = any([kind == CompilationKind.GROUNDING for _, kind in compilationlist])
+    has_quantifiers_removal = any([kind == CompilationKind.QUANTIFIERS_REMOVING for _, kind in compilationlist])
 
     if grounded_encoding and not has_grounding:
         reason.append(f"The {encoder.__name__} requires grounding but the compilation list does not have it.")
@@ -111,10 +113,9 @@ def solveUP(task, conf:Config, validate_plan:bool=True):
     from pypmt.planner.SMT import SMTSearch
 
     or passing them as parameters:
-    from pypmt.apis import solveFile
-    from unified_planning.shortcuts import CompilationKind
-    sol = solveFile(domainfile, problemfile, "qfuf") 
-    sol = solveFile(domainfile, problemfile, "seq")
+    from pypmt.apis import solveUP
+    sol = solveUP(domainfile, problemfile, "qfuf") 
+    sol = solveUP(domainfile, problemfile, "seq")
     """
     set_global_config(conf)
     encoder = global_config.get("encoder")
