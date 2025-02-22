@@ -61,54 +61,51 @@ class Config:
             "encoder": EncoderSequential,
             "search": SMTSearch,
             "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description" : "A simple sequential encoding"
         },
         "seqProp": {
             "encoder": EncoderSequential,
             "search": SMTSearchActionPropagator,
             "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": BasePropagator
+            "propagator": BasePropagator,
+            "description" : "A simple sequential encoding with the Base propagator"
         },
         "forall": {
             "encoder": EncoderForall,
             "search": SMTSearch,
             "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description": "A parallel encoding with forall-step semantics"
         },
         "r2e": {
             "encoder": EncoderRelaxed2Exists,
             "search": SMTSearch,
             "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description": "A parallel encoding with Relaxed-relaxed-exists semantics"
         },
         "uf": {
             "encoder": EncoderSequentialLifted,
             "search": LiftedSearch,
             "compilationlist": lifted_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description": "A sequential lifted encoding with quantifiers"
         },
         "qfuf": {
             "encoder": EncoderSequentialQFUF,
             "search": QFUFSearch,
             "compilationlist": lifted_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description": "A quantifier-free, sequential semi-lifted encoding"
         },
         "omtseq": {
             "encoder": EncoderSequentialOMT,
             "search": OMTSearch,
             "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": None
+            "propagator": None,
+            "description": "A sequential encoding with OMT"
         }
-    }
-
-    valid_configs_description = {
-        "seq": "Use the sequential SMT encoding",
-        "seqProp": "A sequential SMT encoding with the Base propagator",
-        "forall": "Use the parallel SMT encoding with forall-step semantics",
-        "r2e": "Use the R2E encoding",
-        "uf": "Use the lifted encoding with quantifiers",
-        "qfuf": "Use the quantifier-free lifted encoding",
-        "omtseq": "Use the sequential OMT encoding"
     }
 
     def __init__(self, initial_config=None):
@@ -226,7 +223,7 @@ class Config:
         Returns:
             dict: A dictionary with configuration names as keys and their descriptions as values.
         """
-        return {key: self.valid_configs_description[key] for key in self.valid_configs}
+        return {key: self.valid_configs[key]["description"] for key in self.valid_configs}
 
 # the global configuration. It is set from the apis.py file
 global_config = Config()
