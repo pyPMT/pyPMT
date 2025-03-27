@@ -5,8 +5,7 @@ import z3
 class ExistsPropagator(z3.UserPropagateBase):
     def __init__(self, s, ctx=None, e=None):
         z3.UserPropagateBase.__init__(self, s, ctx)
-        self.name = "exists-code"
-        self.mutexes = 0
+        self.name = "exists-lazy"
         self.add_fixed(lambda x, v: self._fixed(x, v))
         self.encoder = e
         self.graph = self.encoder.modifier.graph
@@ -48,7 +47,6 @@ class ExistsPropagator(z3.UserPropagateBase):
             if source == node or node in self.ancestors[step][source]:
                 self.conflict(deps=[self.encoder.get_action_var(source, step),
                                     self.encoder.get_action_var(dest, step)], eqs=[])
-                self.mutexes += 1
                 self.consistent = False
                 break
             elif source in self.ancestors[step][node]:

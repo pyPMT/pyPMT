@@ -6,8 +6,7 @@ import z3
 class ForallPropagator(z3.UserPropagateBase):
     def __init__(self, s, ctx=None, e=None):
         z3.UserPropagateBase.__init__(self, s, ctx)
-        self.name = "forall-prop"
-        self.mutexes = 0
+        self.name = "forall-lazy"
         self.add_fixed(lambda x, v: self._fixed(x, v))
         self.encoder = e
         self.graph = self.encoder.modifier.graph
@@ -51,7 +50,6 @@ class ForallPropagator(z3.UserPropagateBase):
             for dest in self.current[step] & set(self.graph.neighbors(action_name)):
                 literals.add(self.encoder.get_action_var(dest, step))
                 self.consistent = False
-                self.mutexes += 1
             for dest in set(self.graph.neighbors(action_name)) - self.current[step] - self.propagated[step]:
                 if (dest, action_name) not in self.propagated[step]:
                     if dest not in self.nots[step]:
@@ -61,7 +59,6 @@ class ForallPropagator(z3.UserPropagateBase):
                         ids=[action, action],
                         eqs=[]
                     )
-                    self.mutexes += 1
                     self.propagated[step].add((dest, action_name))
                     self.propagated[step].add((action_name, dest))
 
@@ -69,7 +66,6 @@ class ForallPropagator(z3.UserPropagateBase):
             for source in self.current[step] & set(self.graph.predecessors(action_name)):
                 literals.add(self.encoder.get_action_var(source, step))
                 self.consistent = False
-                self.mutexes += 1
             for source in set(self.graph.neighbors(action_name)) - self.current[step]:
                 if (source, action_name) not in self.propagated[step]:
                     if source not in self.nots[step]:
@@ -79,7 +75,6 @@ class ForallPropagator(z3.UserPropagateBase):
                         ids=[action, action],
                         eqs=[]
                     )
-                    self.mutexes += 1
                     self.propagated[step].add((source, action_name))
                     self.propagated[step].add((action_name, source))
             # Check if anything has caused interference
