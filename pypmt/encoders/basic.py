@@ -49,9 +49,9 @@ class EncoderGrounded(Encoder):
         # this is a mapping from the UP ground actions to z3 and back
         self.z3_actions_to_up = dict() # multiple z3 vars point to one grounded fluent
         self.up_actions_to_z3 = defaultdict(list)
-        
+
         # mapping from up fluent to Z3 var
-        self.up_fluent_to_z3 = defaultdict(list) 
+        self.up_fluent_to_z3 = defaultdict(list)
 
         # frame index, indexing what actions can modify which fluent
         self.frame_add = defaultdict(list)
@@ -59,14 +59,14 @@ class EncoderGrounded(Encoder):
         self.frame_num = defaultdict(list)
 
         # Store the "raw" formula that we will later instantiate
-        self.formula  = defaultdict(list) 
+        self.formula  = defaultdict(list)
 
         # Store the length of the formula
         self.formula_length = 0
 
     def __iter__(self):
         return iter(self.task.actions)
-    
+
     def __len__(self):
         return self.formula_length
 
@@ -94,7 +94,7 @@ class EncoderGrounded(Encoder):
 
     def _populate_modifiers(self):
         """!
-        Populates an index on which grounded actions can modify which fluents. 
+        Populates an index on which grounded actions can modify which fluents.
         These are used afterwards for encoding the frame.
         """
         for action in self.task.actions:
@@ -147,7 +147,7 @@ class EncoderGrounded(Encoder):
         if t == 0:
             self.base_encode()
             return deepcopy(self.formula)
-        
+
         self.create_variables(t+1) # we create another layer
 
         list_substitutions_actions = []
@@ -169,7 +169,8 @@ class EncoderGrounded(Encoder):
         encoded_formula['goal']    = z3.substitute(self.formula['goal'], list_substitutions_fluents)
         encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions_fluents + list_substitutions_actions)
         encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions_fluents + list_substitutions_actions)
-        encoded_formula['sem']     = z3.substitute(self.formula['sem'], list_substitutions_actions)
+        if 'sem' in self.formula.keys():
+            encoded_formula['sem'] = z3.substitute(self.formula['sem'], list_substitutions_actions)
         return encoded_formula
 
     def base_encode(self):
@@ -187,7 +188,8 @@ class EncoderGrounded(Encoder):
         self.formula['goal']    = z3.And(self.encode_goal_state(0))  # Encode goal state axioms
         self.formula['actions'] = z3.And(self.encode_actions(0))  # Encode universal axioms
         self.formula['frame']   = z3.And(self.encode_frame(0))  # Encode explanatory frame axioms
-        self.formula['sem']     = z3.And(self.encode_execution_semantics())  # Encode execution semantics (lin/par)
+        if len(self.encode_execution_semantics()) > 0:
+            self.formula['sem'] = z3.And(self.encode_execution_semantics())  # Encode execution semantics (lin/par)
 
     def encode_execution_semantics(self):
         """!
@@ -396,11 +398,27 @@ class EncoderForall(EncoderGrounded):
     actions per step.
     """
     def __init__(self, task):
-        super().__init__("parForall", task, ParallelModifier(True), True)
+        super().__init__("parForall", task, ParallelModifier(True, False), True)
 
 class EncoderExists(EncoderGrounded):
     """
     Exists-step encoding allowing a more relaxed parallelisation than forall.
     """
     def __init__(self, task):
-        super().__init__("parExists", task, ParallelModifier(False), True)
+        super().__init__("parExists", task, ParallelModifier(False, False), True)
+
+class EncoderForallLazy(EncoderGrounded):
+    """
+    Lazy Forall-step encoding, initially adds no interference mutexes and determines
+    when to add them lazily
+    """
+    def __init__(self, task):
+        super().__init__("parLazyForall", task, ParallelModifier(True, True), True)
+
+class EncoderExistsLazy(EncoderGrounded):
+    """
+    Lazy Exists-step encoding, initially adds no interference mutexes and determines
+    when to add them lazily
+    """
+    def __init__(self, task):
+        super().__init__("parLazyExists", task, ParallelModifier(False, True), True)
