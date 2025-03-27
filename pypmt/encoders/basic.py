@@ -1,3 +1,4 @@
+import networkx as nx
 import z3
 
 from copy import deepcopy
@@ -33,12 +34,12 @@ class EncoderGrounded(Encoder):
         planning of the original work in Kautz & Selman 1996 
     """
 
-    def __init__(self, name, task, modifier):
+    def __init__(self, name, task, modifier, parallel):
         self.task = task # The UP problem
         self.name = name
         self.modifier = modifier
         self.ctx = z3.Context() # The context where we will store the problem
-
+        self.parallel = parallel
         # cache all fluents in the problem.
         self.all_fluents = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
 
@@ -115,10 +116,25 @@ class EncoderGrounded(Encoder):
         """
         plan = SequentialPlan([])
         if not model: return plan
-        ## linearize partial-order plan
-        for t in range(0, horizon+1):
-            for action in self:
-                if z3.is_true(model[self.up_actions_to_z3[action.name][t]]):
+        if self.parallel:
+            # Linearise plan taking into account step order
+            action_map = {action.name: action for action in self}
+            for t in range(0, horizon + 1):
+                active_actions = set()
+                for action in self:
+                    if z3.is_true(model[self.up_actions_to_z3[action.name][t]]):
+                        active_actions.add(action.name)
+                if len(self.modifier.graph.nodes) > 0:
+                    sorted_action_names = list(nx.topological_sort(self.modifier.graph.subgraph(active_actions)))[::-1]
+                else:
+                    sorted_action_names = active_actions
+                for action_name in sorted_action_names:
+                    plan.actions.append(ActionInstance(action_map.get(action_name)))
+        else:
+            ## linearize partial-order plan
+            for t in range(0, horizon + 1):
+                for action in self:
+                    if z3.is_true(model[self.up_actions_to_z3[action.name][t]]):
                         plan.actions.append(ActionInstance(action))
         return SMTSequentialPlan(plan, self.task)
 
@@ -371,13 +387,20 @@ class EncoderSequential(EncoderGrounded):
     where each timestep can have exactly one action.
     """
     def __init__(self, task):
-        super().__init__("seq", task, LinearModifier())
+        super().__init__("seq", task, LinearModifier(), False)
 
 
 class EncoderForall(EncoderGrounded):
     """
-    Implementation of a generalisation for numeric planning of the original work
-    in Kautz & Selman 1996 
+    Forall-step encoding, allowing parallelisation in a real-world manner by permitting multiple
+    actions per step.
     """
     def __init__(self, task):
-        super().__init__("seqForall", task, ParallelModifier())
+        super().__init__("parForall", task, ParallelModifier(True), True)
+
+class EncoderExists(EncoderGrounded):
+    """
+    Exists-step encoding allowing a more relaxed parallelisation than forall.
+    """
+    def __init__(self, task):
+        super().__init__("parExists", task, ParallelModifier(False), True)

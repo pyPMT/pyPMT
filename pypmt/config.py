@@ -3,7 +3,7 @@ import logging
 
 from unified_planning.shortcuts import CompilationKind
 from pypmt.encoders.R2E import EncoderRelaxed2Exists
-from pypmt.encoders.basic import EncoderForall, EncoderSequential
+from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
@@ -79,6 +79,13 @@ class Config:
             "compilationlist": grounded_encoders_default_compilation_list,
             "propagator": None,
             "description": "A parallel encoding with forall-step semantics"
+        },
+        "exists": {
+            "encoder": EncoderExists,
+            "search": SMTSearch,
+            "compilationlist": grounded_encoders_default_compilation_list,
+            "propagator": None,
+            "description": "A parallel encoding with exists-step semantics"
         },
         "r2e": {
             "encoder": EncoderRelaxed2Exists,

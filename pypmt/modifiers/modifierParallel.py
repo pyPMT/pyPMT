@@ -80,12 +80,18 @@ class ParallelModifier(Modifier):
 
         # main body of the function
         start_time = time.time()
-        mutexes = set()
         actions = encoder.task.actions
 
+        def add_edge(action1, action2):
+            self.graph.add_edge(action1.name, action2.name)
+
+        for action in actions:
+            self.graph.add_node(action.name)
+
+        # Iterate over actions to identify mutex pairs
         for i, action_1 in enumerate(actions):
-            for action_2 in actions[i+1:]:
-                add_a1, del_a1, num_1, pre_1 = data_actions[action_1]
+            add_a1, del_a1, num_1, pre_1 = data_actions[action_1]
+            for action_2 in actions[i + 1:]:
                 add_a2, del_a2, num_2, pre_2 = data_actions[action_2]
 
                 # Condition 1: can a1 prohibit the execution of a2 or vice-versa?
