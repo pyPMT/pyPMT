@@ -68,10 +68,6 @@ class ParallelModifier(Modifier):
                     preconditions.add(fluent)
             return preconditions
 
-        def mutex(a1, a2):
-            return z3.Not(z3.And(encoder.get_action_var(a1.name, 0),
-                                 encoder.get_action_var(a2.name, 0)))
-
         # we avoid computing some of those twice on the following double for loop
         start_time = time.time()
         data_actions = {}
