@@ -6,13 +6,18 @@ from unified_planning.model.walkers.free_vars import FreeVarsExtractor
 from pypmt.utilities import log
 from pypmt.modifiers.base import Modifier
 
+import networkx as nx
+
 class ParallelModifier(Modifier):
     """
     Parallel modifier, contains method to implement parallel execution semantics.
     """
-    def __init__(self):
+    def __init__(self, forall):
         super().__init__("ParallelModifier")
-    
+        self.graph = nx.DiGraph()
+        self.forall = forall
+        self.mutexes = set()
+
     def encode(self, encoder, actions):
         """!
         Computes mutually exclusive actions:
@@ -63,10 +68,6 @@ class ParallelModifier(Modifier):
                     preconditions.add(fluent)
             return preconditions
 
-        def mutex(a1, a2):
-            return z3.Not(z3.And(encoder.get_action_var(a1.name, 0),
-                                 encoder.get_action_var(a2.name, 0)))
-
         # we avoid computing some of those twice on the following double for loop
         start_time = time.time()
         data_actions = {}
@@ -80,27 +81,63 @@ class ParallelModifier(Modifier):
 
         # main body of the function
         start_time = time.time()
-        mutexes = set()
         actions = encoder.task.actions
 
+        def add_edge(action1, action2):
+            self.graph.add_edge(action1.name, action2.name)
+
+        for action in actions:
+            self.graph.add_node(action.name)
+
+        # Iterate over actions to identify mutex pairs
         for i, action_1 in enumerate(actions):
-            for action_2 in actions[i+1:]:
-                add_a1, del_a1, num_1, pre_1 = data_actions[action_1]
+            add_a1, del_a1, num_1, pre_1 = data_actions[action_1]
+            for action_2 in actions[i + 1:]:
                 add_a2, del_a2, num_2, pre_2 = data_actions[action_2]
 
                 # Condition 1: can a1 prohibit the execution of a2 or vice-versa?
-                if len(pre_2.intersection(set.union(*[add_a1, del_a1, num_1]))) > 0 or \
-                   len(pre_1.intersection(set.union(*[add_a2, del_a2, num_2]))) > 0:
-                    mutexes.add(mutex(action_1, action_2))
-                    continue
+                if len(pre_2.intersection(set.union(*[add_a1, del_a1, num_1]))) > 0:
+                    add_edge(action_1, action_2)
+                if len(pre_1.intersection(set.union(*[add_a2, del_a2, num_2]))) > 0:
+                    add_edge(action_2, action_1)
 
-                ## Condition 2 - Do the effects of a1 and a2 interfere?
+                ## Condition 2: Do the effects of a1 and a2 interfere?
                 if len(add_a1.intersection(del_a2)) > 0 or \
-                   len(add_a2.intersection(del_a1)) > 0 or \
-                   len(num_1.intersection(num_2)) > 0:
-                    mutexes.add(mutex(action_1, action_2))
-                    continue
+                        len(add_a2.intersection(del_a1)) > 0 or \
+                        len(num_1.intersection(num_2)) > 0:
+                    add_edge(action_1, action_2)
+                    add_edge(action_2, action_1)
 
+        def generate_for_all():
+            for edge in self.graph.edges():
+                a1, a2 = edge
+                a1 = encoder.get_action_var(a1, 0)
+                a2 = encoder.get_action_var(a2, 0)
+                m1 = z3.Not(z3.And(a1, a2))
+                m2 = z3.Not(z3.And(a2, a1))
+                if m1 not in self.mutexes and m2 not in self.mutexes:
+                    self.mutexes.add(m1)
+
+        def generate_exists():
+            components = nx.strongly_connected_components(self.graph)
+            for c in components:
+                if len(c) > 1:
+                    numbers = {a: i for i, a in enumerate(c)}
+                    subgraph = self.graph.subgraph(c)
+                    for edge in subgraph.edges():
+                        act_1, act_2 = edge
+                        a1 = encoder.get_action_var(act_1, 0)
+                        a2 = encoder.get_action_var(act_2, 0)
+                        if numbers[act_1] <= numbers[act_2]:
+                            m1 = z3.Not(z3.And(a1, a2))
+                            m2 = z3.Not(z3.And(a2, a1))
+                            if m1 not in self.mutexes and m2 not in self.mutexes:
+                                self.mutexes.add(m1)
+
+        if self.forall:
+            generate_for_all()
+        else:
+            generate_exists()
         end_time = time.time()
-        log(f'computed {len(mutexes)} mutexes, took {end_time-start_time:.2f}s', 2)
-        return mutexes
+        log(f'computed {len(self.mutexes)} mutexes, took {end_time-start_time:.2f}s', 2)
+        return self.mutexes
