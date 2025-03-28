@@ -56,7 +56,7 @@ class ForallPropagator(z3.UserPropagateBase):
                         self.nots[step][dest] = z3.Not(self.encoder.get_action_var(dest, step))
                     self.propagate(
                         e=self.nots[step][dest],
-                        ids=[action, action],
+                        ids=[action],
                         eqs=[]
                     )
                     self.propagated[step].add((dest, action_name))
@@ -72,7 +72,7 @@ class ForallPropagator(z3.UserPropagateBase):
                         self.nots[step][source] = z3.Not(self.encoder.get_action_var(source, step))
                     self.propagate(
                         e=self.nots[step][source],
-                        ids=[action, action],
+                        ids=[action],
                         eqs=[]
                     )
                     self.propagated[step].add((source, action_name))
