@@ -34,12 +34,13 @@ class EncoderGrounded(Encoder):
         planning of the original work in Kautz & Selman 1996 
     """
 
-    def __init__(self, name, task, modifier, parallel):
+    def __init__(self, name, task, modifier, parallel, lazyFrame):
         self.task = task # The UP problem
         self.name = name
         self.modifier = modifier
         self.ctx = z3.Context() # The context where we will store the problem
         self.parallel = parallel
+        self.lazyFrame = lazyFrame
         # cache all fluents in the problem.
         self.all_fluents = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
 
@@ -168,7 +169,9 @@ class EncoderGrounded(Encoder):
         encoded_formula['initial'] = self.formula['initial']
         encoded_formula['goal']    = z3.substitute(self.formula['goal'], list_substitutions_fluents)
         encoded_formula['actions'] = z3.substitute(self.formula['actions'], list_substitutions_fluents + list_substitutions_actions)
-        encoded_formula['frame']   = z3.substitute(self.formula['frame'], list_substitutions_fluents + list_substitutions_actions)
+        if not self.lazyFrame:
+            encoded_formula['frame'] = z3.substitute(self.formula['frame'],
+                                                     list_substitutions_fluents + list_substitutions_actions)
         if 'sem' in self.formula.keys():
             encoded_formula['sem'] = z3.substitute(self.formula['sem'], list_substitutions_actions)
         return encoded_formula
@@ -187,7 +190,8 @@ class EncoderGrounded(Encoder):
         self.formula['initial'] = z3.And(self.encode_initial_state())  # Encode initial state axioms
         self.formula['goal']    = z3.And(self.encode_goal_state(0))  # Encode goal state axioms
         self.formula['actions'] = z3.And(self.encode_actions(0))  # Encode universal axioms
-        self.formula['frame']   = z3.And(self.encode_frame(0))  # Encode explanatory frame axioms
+        if not self.lazyFrame:
+            self.formula['frame'] = z3.And(self.encode_frame(0))  # Encode explanatory frame axioms
         if len(self.encode_execution_semantics()) > 0:
             self.formula['sem'] = z3.And(self.encode_execution_semantics())  # Encode execution semantics (lin/par)
 
@@ -389,7 +393,7 @@ class EncoderSequential(EncoderGrounded):
     where each timestep can have exactly one action.
     """
     def __init__(self, task):
-        super().__init__("seq", task, LinearModifier(), False)
+        super().__init__("seq", task, LinearModifier(), False, False)
 
 
 class EncoderForall(EncoderGrounded):
@@ -398,14 +402,14 @@ class EncoderForall(EncoderGrounded):
     actions per step.
     """
     def __init__(self, task):
-        super().__init__("parForall", task, ParallelModifier(True, False), True)
+        super().__init__("parForall", task, ParallelModifier(True, False), True, False)
 
 class EncoderExists(EncoderGrounded):
     """
     Exists-step encoding allowing a more relaxed parallelisation than forall.
     """
     def __init__(self, task):
-        super().__init__("parExists", task, ParallelModifier(False, False), True)
+        super().__init__("parExists", task, ParallelModifier(False, False), True, False)
 
 class EncoderForallLazy(EncoderGrounded):
     """
@@ -413,7 +417,7 @@ class EncoderForallLazy(EncoderGrounded):
     when to add them lazily
     """
     def __init__(self, task):
-        super().__init__("parLazyForall", task, ParallelModifier(True, True), True)
+        super().__init__("parLazyForall", task, ParallelModifier(True, True), True, False)
 
 class EncoderExistsLazy(EncoderGrounded):
     """
@@ -421,4 +425,11 @@ class EncoderExistsLazy(EncoderGrounded):
     when to add them lazily
     """
     def __init__(self, task):
-        super().__init__("parLazyExists", task, ParallelModifier(False, True), True)
+        super().__init__("parLazyExists", task, ParallelModifier(False, True), True, False)
+
+class EncoderForallFrame(EncoderGrounded):
+    """
+    Lazy Frame axio
+    """
+    def __init__(self, task):
+        super().__init__("parLazyExists", task, ParallelModifier(True, False), True, True)
