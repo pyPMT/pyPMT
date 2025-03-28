@@ -23,11 +23,12 @@ class SMTSearchActionPropagator(Search):
 
             if not self.solver:
                 self.solver = z3.Solver(ctx=context) if 'objective' not in formula else z3.Optimize(ctx=context)
+                self.solver.set("smt.up.persist_clauses", True)
             if not self.propagator:
                 # If we did not instantiate the propagator, we do it here and 
                 from pypmt.config import global_config
                 action_propagator = global_config.get('propagator')
-                self.propagator = action_propagator(self.encoder, s=self.solver)
+                self.propagator = action_propagator(e=self.encoder, s=self.solver)
                 # then we add the action variables to the propagator
                 for a in self.encoder.task.actions:
                     action = self.encoder.get_action_var(a.name, 0)

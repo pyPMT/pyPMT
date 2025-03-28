@@ -12,10 +12,11 @@ class ParallelModifier(Modifier):
     """
     Parallel modifier, contains method to implement parallel execution semantics.
     """
-    def __init__(self, forall):
+    def __init__(self, forall, lazy):
         super().__init__("ParallelModifier")
         self.graph = nx.DiGraph()
         self.forall = forall
+        self.lazy = lazy
         self.mutexes = set()
 
     def encode(self, encoder, actions):
@@ -134,10 +135,11 @@ class ParallelModifier(Modifier):
                             if m1 not in self.mutexes and m2 not in self.mutexes:
                                 self.mutexes.add(m1)
 
-        if self.forall:
-            generate_for_all()
-        else:
-            generate_exists()
+        if not self.lazy:
+            if self.forall:
+                generate_for_all()
+            else:
+                generate_exists()
         end_time = time.time()
         log(f'computed {len(self.mutexes)} mutexes, took {end_time-start_time:.2f}s', 2)
         return self.mutexes
