@@ -151,7 +151,7 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
         @return list of effects without delete-then-set effects
         """
 
-        def has_positive_effect(fluent, action):
+        def has_positive_effect(fluent, action) -> bool:
             """ Does the action has an effect that assigns the fluent to true? """
             for eff in action.effects:
                 if eff.kind == EffectKind.ASSIGN and eff.fluent == fluent and eff.value.is_true():
@@ -161,10 +161,13 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
         clean_effects = []
         for eff in dirty_action.effects:
         # we avoid adding the effect if it is a delete effect and the action has also an add effect for the same fluent
-            if eff.kind == EffectKind.ASSIGN and eff.value.is_false() and has_positive_effect(eff.fluent, dirty_action):
-                pass
-            else: 
-               clean_effects.append(eff)
+            if eff.fluent.type.is_bool_type(): # only check boolean fluents
+                if eff.kind == EffectKind.ASSIGN and \
+                    eff.value.is_false() and \
+                    has_positive_effect(eff.fluent, dirty_action):
+                    pass
+                else: 
+                    clean_effects.append(eff)
 
         fixed_action = dirty_action.clone() # we copy the old action
         fixed_action.clear_effects()        # and remove all the effects

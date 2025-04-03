@@ -164,3 +164,6 @@ dev.py
 
 # MacOS rubbish
 .DS_Store
+
+# z3 temporary files
+.z3-trace

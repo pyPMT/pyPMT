@@ -9,7 +9,7 @@ class LinearModifier(Modifier):
         super().__init__("LinearModifier")
         
     def encode(self, encoder, variables):
-        return z3.PbEq([(var, 1) for var in variables], 1)
+        return [z3.PbEq([(var, 1) for var in variables], 1)]
 
 # we could also do the clique, but a priori seems more expensive
 # TODO : run some simple tests

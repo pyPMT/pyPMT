@@ -14,14 +14,14 @@ def str_repr(f, t=None):
         s = f.fluent().name
         # we concatenate the parameters to the name
         for fluent_arg in f.args:
-            match fluent_arg.node_type:
-                case OperatorKind.VARIABLE_EXP:
-                    s += str(fluent_arg)
-                case OperatorKind.NOT:
-                    s += str_repr(fluent_arg.args[0])
-                case _:
-                    s += f"_{fluent_arg.constant_value()}"
-                
+            node_type = fluent_arg.node_type
+            if node_type == OperatorKind.VARIABLE_EXP:
+                s += str(fluent_arg)
+            elif node_type == OperatorKind.NOT:
+                s += str_repr(fluent_arg.args[0])
+            else:
+                s += f"_{fluent_arg.constant_value()}"
+            
     elif isinstance(f, InstantaneousAction): # for actions
         s = f.name
         # we concatenate the parameters to the name
