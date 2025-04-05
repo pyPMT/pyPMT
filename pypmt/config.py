@@ -61,6 +61,7 @@ class Config:
         ('up_grounder', CompilationKind.GROUNDING)
     ]
     lifted_encoders_default_compilation_list = [
+        ('up_quantifiers_remover', CompilationKind.QUANTIFIERS_REMOVING)
     ]
 
     valid_configs = {
