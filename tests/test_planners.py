@@ -9,7 +9,7 @@ from tests.utilities import read_tasks_files
 # Retrieve all tasks and encodings for parameterization
 pddldir = os.path.join(os.path.dirname(__file__), "pddl")
 tasks = read_tasks_files(pddldir)
-encodings = ["seq", "forall", "r2e", "qfuf"]
+encodings = ["seq", "forall", "forall-lazy", "exists", "exists-lazy", "r2e", "qfuf"]
 
 # Generate test cases for each combination of domain/problem and encoding
 @pytest.mark.parametrize("domainname, domainfile, problemfile, encoding", [
