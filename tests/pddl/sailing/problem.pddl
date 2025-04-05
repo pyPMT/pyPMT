@@ -2,29 +2,25 @@
 ;;Setting seed to 1229
 (define (problem instance_1_1_1229)
 
-	(:domain sailing)
+    (:domain sailing)
 
-	(:objects
-		b0  - boat
-		p0  - person
-	)
+    (:objects
+        b0 - boat
+        p0 - person
+    )
 
-  (:init
-		(= (x b0) 3)
-(= (y b0) 0)
+    (:init
+        (= (x b0) 3)
+        (= (y b0) 0)
 
+        (= (d p0) -37)
 
-		(= (d p0) -370)
+    )
 
+    (:goal
+        (and
+            (saved p0)
 
-	)
-
-	(:goal
-		(and
-			(saved p0)
-
-		)
-	)
+        )
+    )
 )
-
-

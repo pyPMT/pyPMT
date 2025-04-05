@@ -6,8 +6,12 @@
 
 (define (domain civ) 
   (:requirements :fluents :typing :conditional-effects) 
-  (:types place vehicle - store 
-	  resource) 
+  (:types 
+    store -object
+    place vehicle - store 
+	  resource - object
+
+  ) 
   (:constants timber wood coal stone iron ore - resource)
   (:predicates 
    (connected-by-land ?p1 - place ?p2 - place) 
