@@ -167,3 +167,7 @@ dev.py
 
 # z3 temporary files
 .z3-trace
+
+# FD plans
+sas_plan
+sas_plan_*

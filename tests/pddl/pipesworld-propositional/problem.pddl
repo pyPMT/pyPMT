@@ -1,51 +1,54 @@
-;; Minimal Pipesworld problem
-(define (problem tiny-pipes)
+(define (problem minimal-pipesworld)
   (:domain pipesworld_strips)
   (:objects
-    ;; Just 1 batch-atom
-    B1 - batch-atom
+    ;; Just 2 batches
+    B0 B4 - batch-atom
     
-    ;; Just 2 areas
+    ;; 2 areas
     A1 A2 - area
     
-    ;; Just 1 unitary pipe
+    ;; 1 pipe
     S12 - pipe
     
-    ;; Only 1 product with tank slots
-    TA1-lco - tank-slot
-    TA2-lco - tank-slot
+    ;; Only lco tank slots
+    TA1-1-lco - tank-slot
+    TA2-1-lco - tank-slot
   )
   
   (:init
     ;; Pipeline is in normal state
     (normal S12)
     
-    ;; Interface restrictions (bare minimum)
+    ;; Interface restrictions
     (may-interface lco lco)
     
-    ;; Simple network topology
+    ;; Network topology
     (connect A1 A2 S12)
     
     ;; Tank slot locations
-    (tank-slot-product-location TA1-lco lco A1)
-    (tank-slot-product-location TA2-lco lco A2)
+    (tank-slot-product-location TA1-1-lco lco A1)
+    (tank-slot-product-location TA2-1-lco lco A2)
     
-    ;; Batch-atom product
-    (is-product B1 lco)
+    ;; Batch-atoms products
+    (is-product B0 lco)
+    (is-product B4 lco)
     
-    ;; Initial location - B1 in a tank at A1
-    (on B1 A1)
-    (occupied TA1-lco)
-    (not-occupied TA2-lco)
+    ;; Batch-atoms initially located in areas
+    (on B0 A1)
+    (occupied TA1-1-lco)
     
-    ;; Unitary pipeline
+    (not-occupied TA2-1-lco)
+    
+    ;; Batch-atoms initially located in pipes
+    (first B4 S12)
+    (last B4 S12)
+    
+    ;; Unitary pipeline segments
     (unitary S12)
   )
   
   (:goal (and
-    ;; We want batch B1 to be in area A2
-    (on B1 A2)
-    ;; Pipeline should be in normal state
+    (on B4 A2)
     (normal S12)
   ))
 )

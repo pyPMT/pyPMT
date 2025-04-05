@@ -1,58 +1,38 @@
-(define (problem pegsolitaire-simple)
-    (:domain pegsolitaire-sequential)
-    (:objects
-        pos-0-0 - location
-        pos-0-1 - location
-        pos-0-2 - location
-        pos-1-0 - location
-        pos-1-1 - location
-        pos-1-2 - location
-        pos-2-0 - location
-        pos-2-1 - location
-        pos-2-2 - location
+(define (problem minimal-pegsolitaire)
+  (:domain pegsolitaire-sequential)
+  
+  ;; Define the simplest layout: 3 locations in a row
+  (:objects
+    loc1 loc2 loc3 - location
+  )
+  
+  (:init
+    ;; Define the line relationship
+    (IN-LINE loc1 loc2 loc3)
+    
+    ;; Initial state: first and second locations occupied, third is free
+    (occupied loc1)
+    (occupied loc2)
+    (free loc3)
+    
+    ;; Move sequence control
+    (move-ended)
+    
+    ;; Initialize total cost
+    (= (total-cost) 0)
+  )
+  
+  (:goal
+    (and
+      ;; Goal: first and second locations free, third occupied
+      (free loc1)
+      (free loc2)
+      (occupied loc3)
+      ;; Ensure move is ended for goal state
+      (move-ended)
     )
-    (:init
-        (= (total-cost) 0)
-        (move-ended)
-        
-        ;; Define all possible in-line movements (horizontal and vertical)
-        (IN-LINE pos-0-0 pos-0-1 pos-0-2)
-        (IN-LINE pos-0-2 pos-0-1 pos-0-0)
-        (IN-LINE pos-1-0 pos-1-1 pos-1-2)
-        (IN-LINE pos-1-2 pos-1-1 pos-1-0)
-        (IN-LINE pos-2-0 pos-2-1 pos-2-2)
-        (IN-LINE pos-2-2 pos-2-1 pos-2-0)
-        
-        (IN-LINE pos-0-0 pos-1-0 pos-2-0)
-        (IN-LINE pos-2-0 pos-1-0 pos-0-0)
-        (IN-LINE pos-0-1 pos-1-1 pos-2-1)
-        (IN-LINE pos-2-1 pos-1-1 pos-0-1)
-        (IN-LINE pos-0-2 pos-1-2 pos-2-2)
-        (IN-LINE pos-2-2 pos-1-2 pos-0-2)
-        
-        ;; Initial state: 4 pegs and the center is empty
-        (occupied pos-0-0)
-        (occupied pos-0-2)
-        (occupied pos-2-0)
-        (occupied pos-2-2)
-        
-        (free pos-0-1)
-        (free pos-1-0)
-        (free pos-1-1)
-        (free pos-1-2)
-        (free pos-2-1)
-    )
-    (:goal (and
-        ;; Goal: Only one peg remains at the center
-        (free pos-0-0)
-        (free pos-0-1)
-        (free pos-0-2)
-        (free pos-1-0)
-        (occupied pos-1-1)
-        (free pos-1-2)
-        (free pos-2-0)
-        (free pos-2-1)
-        (free pos-2-2)
-    ))
-    (:metric minimize (total-cost))
+  )
+  
+  ;; Specify metric to minimize
+  (:metric minimize (total-cost))
 )

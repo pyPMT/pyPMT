@@ -1,54 +1,56 @@
-;; Absolute Minimal Pipesworld problem
-(define (problem tiniest-pipes)
+(define (problem minimal-pipesworld)
   (:domain pipesworld_strips)
   (:objects
-    ;; Just 1 batch-atom
-    B1 - batch-atom
+    ;; Two batch-atoms
+    B0 B1 - batch-atom
     
-    ;; Just 2 areas
+    ;; Two areas
     A1 A2 - area
     
-    ;; Just 1 unitary pipe
+    ;; One pipe
     S12 - pipe
     
-    ;; Only 1 product with 1 tank slot per area
-    TA1-lco - tank-slot
-    TA2-lco - tank-slot
+    ;; Tank slots - one for each product in each area
+    TA1-lco TA2-lco - tank-slot
   )
   
   (:init
     ;; Pipeline is in normal state
     (normal S12)
     
-    ;; Interface restrictions (only same product)
-    (may-interface lco lco)
-    
-    ;; Simple network topology - just one connection
+    ;; Network topology - one direction only, as in original
     (connect A1 A2 S12)
+    
+    ;; Define pipe as unitary
+    (unitary S12)
+    
+    ;; Product interfaces
+    (may-interface lco lco)
     
     ;; Tank slot locations
     (tank-slot-product-location TA1-lco lco A1)
     (tank-slot-product-location TA2-lco lco A2)
     
-    ;; Batch-atom product
+    ;; Batch-atoms products - both are lco
+    (is-product B0 lco)
     (is-product B1 lco)
     
-    ;; Initial location - B1 in the pipe
-    (first B1 S12)
-    (last B1 S12)
+    ;; Initial batch locations
+    (on B0 A1)
+    (occupied TA1-lco)
     
-    ;; All tank slots are empty
-    (not-occupied TA1-lco)
+    ;; Available tank slots
     (not-occupied TA2-lco)
     
-    ;; Unitary pipeline
-    (unitary S12)
+    ;; Batch in pipe
+    (first B1 S12)
+    (last B1 S12)
   )
   
-  (:goal (and
-    ;; We want batch B1 to be in area A1
-    (on B1 A1)
-    ;; Pipeline should be in normal state
-    (normal S12)
-  ))
+  (:goal 
+    (and
+      (on B1 A2)
+      (normal S12)
+    )
+  )
 )

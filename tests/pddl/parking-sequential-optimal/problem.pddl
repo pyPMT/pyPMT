@@ -1,35 +1,41 @@
-(define (problem mini-parking)
+(define (problem minimal-parking)
   (:domain parking)
+  
+  ;; Define cars and curbs - need at least 3 curbs for a solvable problem
   (:objects
-     car_0 car_1 car_2 - car
-     curb_0 curb_1 - curb
+    car1 car2 - car
+    curb1 curb2 curb3 - curb
   )
+  
   (:init
+    ;; Initial positions of cars
+    (at-curb car1)
+    (at-curb-num car1 curb1)
+    (car-clear car1)
+    
+    (at-curb car2)
+    (at-curb-num car2 curb2)
+    (car-clear car2)
+    
+    ;; curb3 is clear initially
+    (curb-clear curb3)
+    
+    ;; Curbs with cars are not clear
+    (not (curb-clear curb1))
+    (not (curb-clear curb2))
+    
+    ;; Initial cost
     (= (total-cost) 0)
-    
-    ;; Initial configuration
-    ;; curb_0: car_0 car_1
-    ;; curb_1: car_2
-    
-    (at-curb car_0)
-    (at-curb-num car_0 curb_0)
-    (behind-car car_1 car_0)
-    (car-clear car_1)
-    
-    (at-curb car_2)
-    (at-curb-num car_2 curb_1)
-    (car-clear car_2)
   )
+  
   (:goal
     (and
-      ;; Goal configuration
-      ;; curb_0: car_2 car_1
-      ;; curb_1: car_0
-      
-      (at-curb-num car_2 curb_0)
-      (behind-car car_1 car_2)
-      (at-curb-num car_0 curb_1)
+      ;; Goal: cars are in swapped positions
+      (at-curb-num car1 curb2)
+      (at-curb-num car2 curb1)
     )
   )
+  
+  ;; Specify metric to minimize
   (:metric minimize (total-cost))
 )
