@@ -172,6 +172,9 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
         fixed_action = dirty_action.clone() # we copy the old action
         fixed_action.clear_effects()        # and remove all the effects
         for eff in clean_effects:           # now we copy over only the good effects
+            if eff.is_forall():
+                fixed_action.add_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
+            else:
                 fixed_action.add_effect(eff.fluent, eff.value, eff.condition)
 
         return fixed_action
