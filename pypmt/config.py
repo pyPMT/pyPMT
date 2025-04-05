@@ -52,6 +52,8 @@ class Config:
         "description": "A simple text that describes the configuration"
     }
 
+    # TODO: test  "fast-downward-reachability-grounder", "fast-downward-grounder",
+    # these can be faster for some problems, but they do not support numeric fluents
     # valid configs that the library is able to operate with
     grounded_encoders_default_compilation_list = [
         ('up_quantifiers_remover', CompilationKind.QUANTIFIERS_REMOVING), 
@@ -68,13 +70,6 @@ class Config:
             "compilationlist": grounded_encoders_default_compilation_list,
             "propagator": None,
             "description" : "A simple sequential encoding"
-        },
-        "seqProp": {
-            "encoder": EncoderSequential,
-            "search": SMTSearchActionPropagator,
-            "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": BasePropagator,
-            "description" : "A simple sequential encoding with the Base propagator"
         },
         "forall": {
             "encoder": EncoderForall,
@@ -111,13 +106,14 @@ class Config:
             "propagator": None,
             "description": "A parallel encoding with Relaxed-relaxed-exists semantics"
         },
-        "uf": {
-            "encoder": EncoderSequentialLifted,
-            "search": LiftedSearch,
-            "compilationlist": lifted_encoders_default_compilation_list,
-            "propagator": None,
-            "description": "A sequential lifted encoding with quantifiers"
-        },
+        # DISABLED FOR NOW
+        #"uf": {
+        #    "encoder": EncoderSequentialLifted,
+        #    "search": LiftedSearch,
+        #    "compilationlist": lifted_encoders_default_compilation_list,
+        #    "propagator": None,
+        #    "description": "A sequential lifted encoding with quantifiers"
+        #},
         "qfuf": {
             "encoder": EncoderSequentialQFUF,
             "search": QFUFSearch,
@@ -125,13 +121,14 @@ class Config:
             "propagator": None,
             "description": "A quantifier-free, sequential semi-lifted encoding"
         },
-        "omtseq": {
-            "encoder": EncoderSequentialOMT,
-            "search": OMTSearch,
-            "compilationlist": grounded_encoders_default_compilation_list,
-            "propagator": None,
-            "description": "A sequential encoding with OMT"
-        }
+        # DISABLED FOR NOW
+        #"omtseq": {
+        #    "encoder": EncoderSequentialOMT,
+        #    "search": OMTSearch,
+        #    "compilationlist": grounded_encoders_default_compilation_list,
+        #    "propagator": None,
+        #    "description": "A sequential encoding with OMT"
+        #}
     }
 
     def __init__(self, initial_config=None):

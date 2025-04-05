@@ -63,6 +63,7 @@ def set_global_config(conf:Config):
 def initialize_fluents(task:Problem):
     """
     Initialize the int and real fluents of a given task with a default value of 0.
+    Any Boolean fluent is initialized with a default value of False.
     Args:
         task (Problem): The UP task object
     Updates:
@@ -75,6 +76,7 @@ def initialize_fluents(task:Problem):
     _em = _env.expression_manager
     task.initial_defaults.update({_tm.RealType():_em.Real(Fraction(0))})
     task.initial_defaults.update({_tm.IntType() :_em.Int(0)})
+    task.initial_defaults.update({_tm.BoolType() :_em.Bool(False)})
 
     # list unitialized fluents.
     fluentslist = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])

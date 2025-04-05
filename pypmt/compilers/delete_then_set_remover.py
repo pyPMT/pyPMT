@@ -17,7 +17,8 @@ from unified_planning.model import (
 from typing import Optional, Dict
 from functools import partial
 
-
+# TODO: check if this can be better integrated via the 
+# add_engine: https://github.com/aiplan4eu/unified-planning/blob/master/unified_planning/engines/factory.py
 class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
     """
     Delete-then-set remover class: this class offers the capability to transform
@@ -168,13 +169,16 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
                     pass
                 else: 
                     clean_effects.append(eff)
+            else: 
+                clean_effects.append(eff)
 
         fixed_action = dirty_action.clone() # we copy the old action
         fixed_action.clear_effects()        # and remove all the effects
         for eff in clean_effects:           # now we copy over only the good effects
-            if eff.is_forall():
+            if eff.kind == EffectKind.ASSIGN:
                 fixed_action.add_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
-            else:
-                fixed_action.add_effect(eff.fluent, eff.value, eff.condition)
-
+            if eff.kind == EffectKind.DECREASE:
+                fixed_action.add_decrease_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
+            if eff.kind == EffectKind.INCREASE:
+                fixed_action.add_increase_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
         return fixed_action

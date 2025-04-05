@@ -483,7 +483,7 @@ class EncoderSequentialLifted(Encoder):
         return SMTSequentialPlan(plan, self.task)
 
 
-    def encode(self):
+    def encode(self, t:int):
         """!
         Builds and returns the formulas for a single transition step (from t to t+1).
         @param t: timestep where the goal is true

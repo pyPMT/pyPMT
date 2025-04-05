@@ -38,6 +38,12 @@ pyPMT can also be used as a library. See [quick-start examples](https://github.c
 
 Further documentation is available [here](https://github.com/pyPMT/pyPMT/blob/main/refman.pdf).
 
+## Known Limitations
+
+- In domains like `promela-dining-philosophers-fluents-adl` or `psr`, nested foralls in the effects are not supported 
+- The `tidybot-sequential-optimal` domain exceed the maximum recursion depth of the PDDL Parser
+- ID overloading is not supported. For example, a predicate and function with the same name
+
 ## Authors
 
 - [Mustafa F Abdelwahed](https://github.com/MFaisalZaki)

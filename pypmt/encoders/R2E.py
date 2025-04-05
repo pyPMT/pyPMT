@@ -21,7 +21,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
     """
 
     def __init__(self, task):
-        super().__init__("r2e", task, None)
+        super().__init__("r2e", task, None, False)
 
         # The total order between actions needed in the encoding
         self.sorted_actions = self.get_action_order()
