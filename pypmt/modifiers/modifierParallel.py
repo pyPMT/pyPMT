@@ -1,25 +1,32 @@
+from functools import lru_cache
 import z3
 import time
 
 from unified_planning.model.walkers.free_vars import FreeVarsExtractor
 
+from enum import Enum, auto
 from pypmt.utilities import log
 from pypmt.modifiers.base import Modifier
 
 import networkx as nx
 
+class MutexSemantics(Enum):
+    """Enum to define the mutex semantics for parallel execution."""
+    FORALL = auto()  # All mutex constraints are added
+    EXISTS = auto()  # Only mutexes in strongly connected components are added
+
 class ParallelModifier(Modifier):
     """
     Parallel modifier, contains method to implement parallel execution semantics.
     """
-    def __init__(self, forall, lazy):
+    def __init__(self, semantics=MutexSemantics.FORALL, lazy=False):
         super().__init__("ParallelModifier")
         self.graph = nx.DiGraph()
-        self.forall = forall
+        self.semantics = semantics
         self.lazy = lazy
         self.mutexes = set()
 
-    def encode(self, encoder, actions):
+    def encode(self, encoder, actions) -> set:
         """!
         Computes mutually exclusive actions:
         Two actions (a1, a2) are mutex if:
@@ -39,6 +46,7 @@ class ParallelModifier(Modifier):
         @return mutex: list of tuples defining action mutexes
         """
 
+        @lru_cache(maxsize=None)
         def get_add_del_effects(action):
             """!
             Returns a tuple (add, del) of lists of effects of the action
@@ -50,6 +58,7 @@ class ParallelModifier(Modifier):
 
             return (add_effects, del_effects)
 
+        @lru_cache(maxsize=None)
         def get_numeric_effects(action):
             """!
             Returns a set of numeric effects of the action
@@ -58,6 +67,7 @@ class ParallelModifier(Modifier):
                         for effect in action.effects if 
                         effect.value.type.is_int_type() or effect.value.type.is_real_type()])
 
+        @lru_cache(maxsize=None)
         def get_preconditions(action):
             """!
             Returns a set of preconditions of the action
@@ -67,6 +77,11 @@ class ParallelModifier(Modifier):
             for pre in action.preconditions:
                 for fluent in nameextractor.get(pre):
                     preconditions.add(fluent)
+            # we also have to consider the conditional effects
+            for eff in action.effects:
+                if eff.is_conditional():
+                    for fluent in nameextractor.get(eff.condition):
+                        preconditions.add(fluent)
             return preconditions
 
         # we avoid computing some of those twice on the following double for loop
@@ -136,7 +151,7 @@ class ParallelModifier(Modifier):
                                 self.mutexes.add(m1)
 
         if not self.lazy:
-            if self.forall:
+            if self.semantics == MutexSemantics.FORALL:
                 generate_for_all()
             else:
                 generate_exists()

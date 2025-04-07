@@ -8,8 +8,8 @@ class LinearModifier(Modifier):
     def __init__(self):
         super().__init__("LinearModifier")
         
-    def encode(self, encoder, variables):
-        return [z3.PbEq([(var, 1) for var in variables], 1)]
+    def encode(self, encoder, actions) -> set:
+        return set([z3.PbEq([(var, 1) for var in actions], 1)])
 
 # we could also do the clique, but a priori seems more expensive
 # TODO : run some simple tests

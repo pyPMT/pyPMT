@@ -281,6 +281,8 @@ class EncoderSequentialLifted(Encoder):
             return z3.IntVal(expr, ctx=self.ctx)
         elif isinstance(expr, bool): # A python Boolean
             return z3.BoolVal(expr, ctx=self.ctx)
+        elif isinstance(expr, float): 
+            return z3.RealVal(expr, ctx=self.ctx)
 
         elif isinstance(expr, Effect): # A UP Effect
             eff = None

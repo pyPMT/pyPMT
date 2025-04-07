@@ -14,7 +14,7 @@ from unified_planning.plans import ActionInstance
 from pypmt.encoders.base import Encoder
 from pypmt.encoders.utilities import str_repr, flattern_list
 from pypmt.modifiers.modifierLinear import LinearModifier
-from pypmt.modifiers.modifierParallel import ParallelModifier
+from pypmt.modifiers.modifierParallel import ParallelModifier, MutexSemantics
 
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 
@@ -101,12 +101,13 @@ class EncoderGrounded(Encoder):
             str_action = str_repr(action)
             for effect in action.effects:
                var_modified = str_repr(effect.fluent)
+               condition = effect.condition # get the condition of the effect
                if effect.value.is_true(): # boolean effect
-                   self.frame_add[var_modified].append(str_action)
+                   self.frame_add[var_modified].append((condition,str_action))
                elif effect.value.is_false():
-                   self.frame_del[var_modified].append(str_action)
+                   self.frame_del[var_modified].append((condition, str_action))
                else: # is a numeric or complex expression
-                   self.frame_num[var_modified].append(str_action)
+                   self.frame_num[var_modified].append((condition, str_action))
 
     def extract_plan(self, model, horizon):
         """!
@@ -188,8 +189,9 @@ class EncoderGrounded(Encoder):
         self.formula['goal']    = z3.And(self.encode_goal_state(0))  # Encode goal state axioms
         self.formula['actions'] = z3.And(self.encode_actions(0))  # Encode universal axioms
         self.formula['frame']   = z3.And(self.encode_frame(0))  # Encode explanatory frame axioms
-        if len(self.encode_execution_semantics()) > 0:
-            self.formula['sem'] = z3.And(self.encode_execution_semantics())  # Encode execution semantics (lin/par)
+        execution_semantics = self.encode_execution_semantics()
+        if len(execution_semantics) > 0:
+            self.formula['sem'] = z3.And(execution_semantics)  # Encode execution semantics (lin/par)
 
     def encode_execution_semantics(self):
         """!
@@ -293,7 +295,8 @@ class EncoderGrounded(Encoder):
 
         basically for each fluent, to change in value it means
         that some action that can make it change has been executed
-        f(x,y,z, t) != f(x,y,z, t+1) -> a \\/ b \\/ c
+        f(x,y,z, t) != f(x,y,z, t+1) -> (a /\\ g(y)) \\/ b \\/ (c /\\ (x > 3))
+        Note conditional effects are embedded in the action. 
         """
         frame = [] # the whole frame
 
@@ -314,7 +317,9 @@ class EncoderGrounded(Encoder):
             if len(or_actions) == 0:
                 who_can_change_fluent = z3.BoolVal(False, ctx=self.ctx)
             else:
-                who_can_change_fluent = z3.Or([self.up_actions_to_z3[x][t] for x in or_actions])
+                who_can_change_fluent = z3.Or([
+                     z3.And(self._expr_to_z3(cond, t), self.up_actions_to_z3[x][t]) for (cond, x) in or_actions
+                     ])
 
             frame.append(z3.Implies(var_t != var_t1, who_can_change_fluent, ctx=self.ctx))
         return frame
@@ -331,6 +336,8 @@ class EncoderGrounded(Encoder):
             return z3.IntVal(expr, ctx=self.ctx)
         elif isinstance(expr, bool): # A python Boolean
             return z3.BoolVal(expr, ctx=self.ctx)
+        elif isinstance(expr, float): 
+            return z3.RealVal(expr, ctx=self.ctx)
 
         elif isinstance(expr, Effect): # A UP Effect
             eff = None
@@ -389,7 +396,7 @@ class EncoderSequential(EncoderGrounded):
     where each timestep can have exactly one action.
     """
     def __init__(self, task):
-        super().__init__("seq", task, LinearModifier(), False)
+        super().__init__("seq", task, LinearModifier(), parallel=False)
 
 
 class EncoderForall(EncoderGrounded):
@@ -398,14 +405,16 @@ class EncoderForall(EncoderGrounded):
     actions per step.
     """
     def __init__(self, task):
-        super().__init__("parForall", task, ParallelModifier(True, False), True)
+        super().__init__("parForall", task, 
+                         ParallelModifier(MutexSemantics.FORALL, lazy=False), parallel=True)
 
 class EncoderExists(EncoderGrounded):
     """
     Exists-step encoding allowing a more relaxed parallelisation than forall.
     """
     def __init__(self, task):
-        super().__init__("parExists", task, ParallelModifier(False, False), True)
+        super().__init__("parExists", task, 
+                         ParallelModifier(MutexSemantics.EXISTS, lazy=False), parallel=True)
 
 class EncoderForallLazy(EncoderGrounded):
     """
@@ -413,7 +422,8 @@ class EncoderForallLazy(EncoderGrounded):
     when to add them lazily
     """
     def __init__(self, task):
-        super().__init__("parLazyForall", task, ParallelModifier(True, True), True)
+        super().__init__("parLazyForall", task, 
+                         ParallelModifier(MutexSemantics.FORALL, lazy=True), parallel=True)
 
 class EncoderExistsLazy(EncoderGrounded):
     """
@@ -421,4 +431,5 @@ class EncoderExistsLazy(EncoderGrounded):
     when to add them lazily
     """
     def __init__(self, task):
-        super().__init__("parLazyExists", task, ParallelModifier(False, True), True)
+        super().__init__("parLazyExists", task,
+                         ParallelModifier(MutexSemantics.EXISTS, lazy=True), parallel=True)
