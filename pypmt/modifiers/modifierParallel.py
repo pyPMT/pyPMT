@@ -77,8 +77,11 @@ class ParallelModifier(Modifier):
             for pre in action.preconditions:
                 for fluent in nameextractor.get(pre):
                     preconditions.add(fluent)
-            # we also have to consider the conditional effects
             for eff in action.effects:
+                # we have to consider any variables in the rhs of the effect (as it might be a linear expression)
+                for fluent in nameextractor.get(eff.value):
+                    preconditions.add(fluent)
+                # we also have to consider the conditional effects
                 if eff.is_conditional():
                     for fluent in nameextractor.get(eff.condition):
                         preconditions.add(fluent)
