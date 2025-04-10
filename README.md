@@ -1,12 +1,20 @@
 # pyPMT: A Python Library for Planning Modulo Theories using SMT
 
-## Installation
+## Install and Build
 
 Install pyPMT using `pip`:
 
 ```sh
 python -m pip install .
 ```
+
+You can trigger the build step by:
+
+```sh
+python build.py
+```
+
+The `--clean` option cleans up the build directory beforehand
 
 ## Usage
 

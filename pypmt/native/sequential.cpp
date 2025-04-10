@@ -23,7 +23,9 @@ public:
     py::dict search() {
         py::dict result;
         result["satisfiable"] = false;
+        return result;
 
+        /*
         // Iterate over the schedule
         for (int step : schedule) {
             // Encode the problem for the current step
@@ -49,6 +51,7 @@ public:
 
         // If no solution is found
         return result;
+        */
     }
 
 private:
