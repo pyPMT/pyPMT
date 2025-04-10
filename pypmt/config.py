@@ -17,6 +17,8 @@ from pypmt.propagators.base import BasePropagator
 from pypmt.propagators.exists import ExistsPropagator
 from pypmt.propagators.forall import ForallPropagator
 
+from pypmt.planner.nativeZ3Planner import SequentialPlanner
+
 
 class Config:
     """
@@ -62,6 +64,13 @@ class Config:
     ]
 
     valid_configs = {
+        "native-seq": {
+            "encoder": EncoderSequential,
+            "search": SequentialPlanner,
+            "compilationlist": grounded_encoders_default_compilation_list,
+            "propagator": None,
+            "description" : "A simple sequential encoding, using the native interface"
+        },
         "seq": {
             "encoder": EncoderSequential,
             "search": SMTSearch,
