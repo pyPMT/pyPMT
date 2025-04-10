@@ -281,6 +281,8 @@ class EncoderSequentialLifted(Encoder):
             return z3.IntVal(expr, ctx=self.ctx)
         elif isinstance(expr, bool): # A python Boolean
             return z3.BoolVal(expr, ctx=self.ctx)
+        elif isinstance(expr, float): 
+            return z3.RealVal(expr, ctx=self.ctx)
 
         elif isinstance(expr, Effect): # A UP Effect
             eff = None
@@ -483,7 +485,7 @@ class EncoderSequentialLifted(Encoder):
         return SMTSequentialPlan(plan, self.task)
 
 
-    def encode(self):
+    def encode(self, t:int):
         """!
         Builds and returns the formulas for a single transition step (from t to t+1).
         @param t: timestep where the goal is true

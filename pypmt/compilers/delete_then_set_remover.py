@@ -17,7 +17,8 @@ from unified_planning.model import (
 from typing import Optional, Dict
 from functools import partial
 
-
+# TODO: check if this can be better integrated via the 
+# add_engine: https://github.com/aiplan4eu/unified-planning/blob/master/unified_planning/engines/factory.py
 class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
     """
     Delete-then-set remover class: this class offers the capability to transform
@@ -151,7 +152,7 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
         @return list of effects without delete-then-set effects
         """
 
-        def has_positive_effect(fluent, action):
+        def has_positive_effect(fluent, action) -> bool:
             """ Does the action has an effect that assigns the fluent to true? """
             for eff in action.effects:
                 if eff.kind == EffectKind.ASSIGN and eff.fluent == fluent and eff.value.is_true():
@@ -161,14 +162,23 @@ class DeleteThenSetRemover(engines.engine.Engine, CompilerMixin):
         clean_effects = []
         for eff in dirty_action.effects:
         # we avoid adding the effect if it is a delete effect and the action has also an add effect for the same fluent
-            if eff.kind == EffectKind.ASSIGN and eff.value.is_false() and has_positive_effect(eff.fluent, dirty_action):
-                pass
+            if eff.fluent.type.is_bool_type(): # only check boolean fluents
+                if eff.kind == EffectKind.ASSIGN and \
+                    eff.value.is_false() and \
+                    has_positive_effect(eff.fluent, dirty_action):
+                    pass
+                else: 
+                    clean_effects.append(eff)
             else: 
-               clean_effects.append(eff)
+                clean_effects.append(eff)
 
         fixed_action = dirty_action.clone() # we copy the old action
         fixed_action.clear_effects()        # and remove all the effects
         for eff in clean_effects:           # now we copy over only the good effects
-                fixed_action.add_effect(eff.fluent, eff.value, eff.condition)
-
+            if eff.kind == EffectKind.ASSIGN:
+                fixed_action.add_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
+            if eff.kind == EffectKind.DECREASE:
+                fixed_action.add_decrease_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
+            if eff.kind == EffectKind.INCREASE:
+                fixed_action.add_increase_effect(eff.fluent, eff.value, eff.condition, forall=eff.forall)
         return fixed_action
