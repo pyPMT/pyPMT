@@ -116,7 +116,7 @@ class EncoderGrounded(Encoder):
         @returns: an instance of a SMTSequentialPlan
         """
         plan = SequentialPlan([])
-        if not model: return plan
+        if not model: return SMTSequentialPlan(plan, self.task)
         if self.parallel:
             # Linearise plan taking into account step order
             action_map = {action.name: action for action in self}

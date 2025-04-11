@@ -428,7 +428,7 @@ class EncoderSequentialQFUF(Encoder):
         @return  plan: dictionary containing plan. Keys are steps, values are actions.
         """
         plan = SequentialPlan([])
-        if not model: return plan
+        if not model: return SMTSequentialPlan(plan, self.task)
         ## linearize partial-order plan
         for step in range(0, horizon+1):
             # which action is in step "step?"
