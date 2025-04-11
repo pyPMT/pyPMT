@@ -262,8 +262,7 @@ class EncoderRelaxed2Exists(EncoderGrounded):
 
     def extract_plan(self, model, horizon):
         plan = SequentialPlan([])
-        if not model:
-            return plan
+        if not model: return SMTSequentialPlan(plan, self.task)
         ## linearize partial-order plan
         for t in range(0, horizon + 1):
             for action in self:

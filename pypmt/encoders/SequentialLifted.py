@@ -466,7 +466,7 @@ class EncoderSequentialLifted(Encoder):
         @returns: dictionary containing plan. Keys are steps, values are actions.
         """
         plan = SequentialPlan([])
-        if not model: return plan
+        if not model: return SMTSequentialPlan(plan, self.task)
         ## linearize partial-order plan
         for step in range(0, horizon):
             # which action is in step "step?"
