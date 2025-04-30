@@ -3,7 +3,8 @@ import logging
 
 from unified_planning.shortcuts import CompilationKind
 from pypmt.encoders.R2E import EncoderRelaxed2Exists
-from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists, EncoderForallLazy, EncoderExistsLazy
+from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists, EncoderForallLazy, EncoderExistsLazy, \
+    EncoderForallFrame
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
@@ -16,6 +17,7 @@ from pypmt.planner.OMT import OMTSearch
 from pypmt.propagators.base import BasePropagator
 from pypmt.propagators.exists import ExistsPropagator
 from pypmt.propagators.forall import ForallPropagator
+from pypmt.propagators.frame import FramePropagator
 
 
 class Config:
@@ -100,6 +102,20 @@ class Config:
             "propagator": ExistsPropagator,
             "description": "Lazy interference for parallel exists-step semantics"
         },
+        "forall-frame": {
+            "encoder": EncoderForallFrame,
+            "search": SMTSearchActionPropagator,
+            "compilationlist": grounded_encoders_default_compilation_list,
+            "propagator": FramePropagator,
+            "description": "Lazy parallel frame axioms using forall-step semantics"
+        },
+        # "exists-frame": {
+        #     "encoder": EncoderExistsFrame,
+        #     "search": SMTSearchActionPropagator,
+        #     "compilationlist": lifted_encoders_default_compilation_list,
+        #     "propagator": FramePropagator,
+        #     "description": "A quantifier-free, sequential semi-lifted encoding"
+        # },
         "r2e": {
             "encoder": EncoderRelaxed2Exists,
             "search": SMTSearch,

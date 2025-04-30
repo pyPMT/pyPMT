@@ -1,5 +1,6 @@
 import time
 import z3
+from pypmt.encoders.utilities import str_repr
 
 from pypmt.planner.utilities import dumpProblem
 from pypmt.utilities import log
@@ -33,10 +34,28 @@ class SMTSearchActionPropagator(Search):
                 for a in self.encoder.task.actions:
                     action = self.encoder.get_action_var(a.name, 0)
                     self.propagator.add(action)
+                if self.encoder.lazyFrame:
+                    for v, _ in self.encoder.task.initial_values.items():
+                        key = str_repr(v)
+                        var_t = self.encoder.up_fluent_to_z3[key][0]
+                        var_t1 = self.encoder.up_fluent_to_z3[key][1]
+                        a = z3.Bool(f'{var_t}:{var_t1}', context)
+                        self.solver.add(a == (var_t == var_t1))
+                        self.propagator.add(var_t)
+                        self.propagator.add(var_t1)
+                        self.propagator.add(a)
             else:
                 for a in self.encoder.task.actions:
                     action = self.encoder.get_action_var(a.name, horizon)
                     self.propagator.add(action)
+                if self.encoder.lazyFrame:
+                    for v, _ in self.encoder.task.initial_values.items():
+                        key = str_repr(v)
+                        var_t = self.encoder.up_fluent_to_z3[key][horizon]
+                        var_t1 = self.encoder.up_fluent_to_z3[key][horizon + 1]
+                        a = z3.Bool(f'{var_t}:{var_t1}', context)
+                        self.solver.add(a == (var_t == var_t1))
+                        self.propagator.add(a)
             
             # deal with the initial state
             if self.horizon == 0:
