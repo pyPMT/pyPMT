@@ -9,6 +9,11 @@ def str_repr(f, t=None):
     """! 
     given a FNode from UP representing a fluent and a possible timestep return a
     string representation of it. 
+
+    NOTE: this function needs to be synchronised with the function in the C++
+    implementation that instantiates the variables per each step, to know
+    how the timestep is represented. For now, its simply adding "_{t}" to the
+    fluent name.
     """
     if isinstance(f, FNode) and f.is_fluent_exp(): # for fluents
         s = f.fluent().name
@@ -42,5 +47,5 @@ def varstr_repr(var):
     varname = str(var)
     return varname[:varname.rfind('_')]
 
-def flattern_list(list_of_lists):
-    return sum((flattern_list(sub) if isinstance(sub, list) else [sub] for sub in list_of_lists), [])
+def flatten_list(list_of_lists):
+    return sum((flatten_list(sub) if isinstance(sub, list) else [sub] for sub in list_of_lists), [])

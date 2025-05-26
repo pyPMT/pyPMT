@@ -30,13 +30,9 @@ def build_ext(make_clean=False):
     # Prepare CMake arguments from build_parameters
     cmake_args = ["-D{}={}".format(key, value) for key, value in build_parameters.items()]
     
-    # Run CMake configuration step
+    # Run the CMake config step, build and install the native module
     subprocess.run(["cmake", "-G", "Unix Makefiles", ".."] + cmake_args, cwd=build_dir, check=True)
-    
-    # Build the native module
     subprocess.run(["cmake", "--build", "."], cwd=build_dir, check=True)
-    
-    # Optional: Install the compiled module in the expected location
     subprocess.run(["cmake", "--install", "."], cwd=build_dir, check=True)
 
 if __name__ == "__main__":

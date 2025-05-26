@@ -7,6 +7,7 @@ from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
+from pypmt.encoders.native import EncoderSequentialNative
 
 from pypmt.planner.SMT import SMTSearch
 from pypmt.planner.SMTActionPropagator import SMTSearchActionPropagator
@@ -68,7 +69,7 @@ class Config:
 
     valid_configs = {
         "native-seq": {
-            "encoder": EncoderSequential,
+            "encoder": EncoderSequentialNative,
             "search": SequentialPlanner,
             "compilationlist": grounded_encoders_default_compilation_list,
             "propagator": None,

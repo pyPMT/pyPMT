@@ -7,7 +7,7 @@ from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.shortcuts import get_environment
 from unified_planning.shortcuts import Fraction
 
-from pypmt.encoders.utilities import flattern_list
+from pypmt.encoders.utilities import flatten_list
 
 from pypmt.config import Config
 from pypmt.config import global_config  # Import the global configuration
@@ -37,6 +37,7 @@ def check_compatibility(encoder, compilationlist:list):
     compatible = True
     reason = ['incompatibility reasons:']
     # First check is to know whether the encoder requires grounding or not.
+    # We iterate over the class hierarchy to check if the encoder is a grounded encoding or not.
     grounded_encoding = 'EncoderGrounded' in [c.__name__ for c in encoder.__mro__]
     has_grounding = any([kind == CompilationKind.GROUNDING for _, kind in compilationlist])
     has_quantifiers_removal = any([kind == CompilationKind.QUANTIFIERS_REMOVING for _, kind in compilationlist])
@@ -79,7 +80,7 @@ def initialize_fluents(task:Problem):
     task.initial_defaults.update({_tm.BoolType() :_em.Bool(False)})
 
     # list unitialized fluents.
-    fluentslist = flattern_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
+    fluentslist = flatten_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
     initialized_fluents  = list(task.explicit_initial_values.keys())
     unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, fluentslist))
     

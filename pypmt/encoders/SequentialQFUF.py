@@ -9,7 +9,7 @@ from unified_planning.shortcuts import Parameter, FNode, Effect, EffectKind, Fra
 from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.engines.results import CompilerResult
 
-from pypmt.encoders.utilities import flattern_list
+from pypmt.encoders.utilities import flatten_list
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 from pypmt.encoders.base import Encoder
 
@@ -32,7 +32,7 @@ class EncoderSequentialQFUF(Encoder):
 
         # cache all fluents in the problem.
         _task    = self.task.problem if isinstance(self.task, CompilerResult) else self.task
-        self.all_fluents = flattern_list([list(get_all_fluent_exp(_task, f)) for f in _task.fluents])
+        self.all_fluents = flatten_list([list(get_all_fluent_exp(_task, f)) for f in _task.fluents])
         self._initialize_fluents(_task, self.all_fluents)
 
         self.z3_timestep_sort = z3.IntSort(ctx=self.ctx) # for now, it's just an int

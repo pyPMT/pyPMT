@@ -1,4 +1,4 @@
-from typing import Any, DefaultDict, Dict
+from typing import Any, DefaultDict, Dict, List
 import networkx as nx
 import z3
 
@@ -12,7 +12,7 @@ from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.plans import SequentialPlan
 from unified_planning.plans import ActionInstance
 
-from pypmt.encoders.base import Encoder
+from pypmt.encoders.basic import EncoderGrounded
 from pypmt.encoders.utilities import str_repr, flatten_list
 from pypmt.modifiers.base import Modifier
 from pypmt.modifiers.modifierLinear import LinearModifier
@@ -20,89 +20,16 @@ from pypmt.modifiers.modifierParallel import ParallelModifier, MutexSemantics
 
 from pypmt.planner.plan.smt_sequential_plan import SMTSequentialPlan
 
-class EncoderGrounded(Encoder):
+class EncoderGroundedNative(EncoderGrounded):
     """!
-    As its filename implies, it's the most basic encoding you can imagine.  It
-    first uses UP to ground the problem, and then implements a state-based
-    encoding of Planning as SAT.  Details of the encoding can be found in the
-    recent Handbooks of Satisfiability in the chapter written by Rintanen:
-    Planning and SAT. This also implements a generalisation for numeric planning
-
-    The classical way of improving the performance of encodings is to allow more
-    than one action per step (layer). This class is really a "base class" for 
-    two encodings:
-        - sequential encoding: Kautz & Selman 1992 for the original encoding
-        - ForAll semantics: 
-        planning of the original work in Kautz & Selman 1996 
-    
-    Note: The check the library does to see if an encoder needs to ground is if
-    this class is in the inheritance hierarchy of the encoder. (apis.py:check_compatibility)
+    As its filename implies, it inherits from the EncoderGrounded class. This is
+    an adaptation of the original simple grounded encoding to work with the 
+    native implementation of the planner.
     """
-
-    def __init__(self, name: str, task: Any, modifier: Any, parallel: bool) -> None:
-        self.task               = task # The UP problem
-        self.name: str          = name
-        self.modifier: Modifier = modifier
-        self.ctx: z3.Context    = z3.Context()  # The context where we will store the problem
-        self.parallel: bool     = parallel
-
-        # A cache all fluents in the problem. This needs some computation
-        # on the UP side, so we do it once and store it.
-        self.all_fluents = flatten_list([list(get_all_fluent_exp(task, f)) for f in task.fluents])
-        
-        # The main idea in the following variables is that we have lists
-        # representing the layers (steps) containing the respective variables
-
-        # this is a mapping from the UP ground actions to z3 
-        # e.g. "z3.Bool("a(x,y,z)_0") -> "a(x,y,z)"
-        # e.g. "z3.Bool("a(x,y,z)_1") -> "a(x,y,z)"
-        # ...
-        # note that multiple z3 vars will point the same grounded fluent, as we
-        # need one for each timestep
-        self.z3_actions_to_up = dict() 
-
-        # This is a mapping from the str representation of the grounded action
-        # to a list of z3 variables.
-        # e.g. "a(x,y,z)" -> [z3.Bool("a(x,y,z)_0"), z3.Bool("a(x,y,z)_1"), ...]
-        self.up_actions_to_z3 = defaultdict(list)
-
-        # mapping from the str representation of the up fluent to the Z3 var.
-        # e.g. "f(x,y,z)" -> [z3.Bool("f(x,y,z)_0"), z3.Bool("f(x,y,z)_1"), ...]
-        self.up_fluent_to_z3: DefaultDict[str, Any] = defaultdict(list)
-
-        # frame index, indexing what actions can modify which fluent maps from
-        # the str representation of the fluent to a list of tuples (condition,
-        # action)
-        #  e.g. "f(x,y,z)" -> [(cond1, action1), (cond2, action2)] 
-        # where cond1 and cond2 are the conditions of the effects that can modify 
-        # the fluent
-        self.frame_add: DefaultDict[str, Any] = defaultdict(list)
-        self.frame_del: DefaultDict[str, Any] = defaultdict(list)
-        self.frame_num: DefaultDict[str, Any] = defaultdict(list)
-
-        # Store the "raw" formula that we will later instantiate
-        # maps from the "tag" of the formula to the actual z3 expression or probe
-        # e.g. "initial" -> z3.And(...)
-        self.formula: Dict[str, Any] = defaultdict()
-        # Store the length of the formula
-        self.formula_length = 0
-
-    def __iter__(self):
-        return iter(self.task.actions)
-
-    def __len__(self):
-        return self.formula_length
-
-    def _initialize_fluents(self, _task, _fluentslist):
-        initialized_fluents  = list(_task.explicit_initial_values.keys())
-        unintialized_fluents = list(filter(lambda x: not x in initialized_fluents, _fluentslist))
-        for fe in unintialized_fluents:
-            if fe.type.is_bool_type():
-                _task.set_initial_value(fe, False) # we need this for plan validator.
-            elif fe.type.is_real_type():
-                _task.set_initial_value(fe, 0) # we need this for plan validator.
-            else:
-                raise TypeError
+    
+    def __init__(self, encoding_name, task, modifier, parallel):
+        super().__init__(encoding_name, task, modifier, parallel)
+        self.var_metadata: DefaultDict[str, Dict[str, str]] = defaultdict()
 
     def get_action_var(self, name, t):
         """!
@@ -216,14 +143,60 @@ class EncoderGrounded(Encoder):
         if len(execution_semantics) > 0:
             self.formula['sem'] = z3.And(execution_semantics)  # Encode execution semantics (lin/par)
 
-    def encode_execution_semantics(self):
-        """!
-        Encodes execution semantics as specified by the modifier class held.
 
-        @returns: axioms that specify execution semantics.
+    def encode_variables_native(self) -> DefaultDict[str, Dict[str, str]]:
+        """!
+        Returns the variables created during the encoding process.
+        The attributes that we could consider for variables are:
+            - name: the id of the variable (maybe the declr and then we parse it back?)
+            - type: the type of the variable (maybe included in the declr?)
+            - static: a categorisation of the variable (either fixed or time-based)
+            - kind: either state or action variable
+
+        @returns: A dictionary with the variables created during the encoding process
         """
-        action_vars = list(map(lambda x: x[0], self.up_actions_to_z3.values()))
-        return self.modifier.encode(self, action_vars)
+        # create vars for first transition so we can encode the problem using Z3py
+        self.create_variables(0)
+        self.create_variables(1)
+        
+        # now add the actions and fluent vars to the metadata, so we can move
+        # that to the native planner
+        for key in self.up_actions_to_z3.keys():
+            self.var_metadata[key] = {
+                "kind": "action",
+                "sort": str(self.up_actions_to_z3[key][0].sort())
+            }
+
+        for key in self.up_fluent_to_z3.keys():
+            self.var_metadata[key] = {
+                "kind": "fluent",
+                "sort": str(self.up_fluent_to_z3[key][0].sort())
+            }
+        return self.var_metadata
+
+    def encode_formulas_native(self) -> Dict[str, str]:
+        """!
+        Builds the encoding for the native planner as a string representation.
+        
+        The attributes we could consider for the constraints are:
+            - sexpr: the string representation of the constraint
+            - type: initial, goal, transition function (actions), frame axiom,
+                     execution semantics, state constraints 
+        """
+        assert len(self.var_metadata) > 0, "No variables created yet. Call encode_variables_native() first."
+        self._populate_modifiers() # do indices
+        formula: Dict[str, str] = {
+        'initial' : z3.And(self.encode_initial_state()).sexpr(),  # type: ignore
+        'goal'    : z3.And(self.encode_goal_state(0)).sexpr(),  # type: ignore
+        'actions' : z3.And(self.encode_actions(0)).sexpr(),   # type: ignore
+        'frame'   : z3.And(self.encode_frame(0)).sexpr() # type: ignore
+        }  
+        # Encode execution semantics (lin/par)
+        execution_semantics = self.encode_execution_semantics()
+        if execution_semantics:
+            formula['sem'] = z3.And(execution_semantics).sexpr()   # type: ignore
+
+        return formula
 
     def create_variables(self, t):
         """!
@@ -231,7 +204,7 @@ class EncoderGrounded(Encoder):
 
         @param t: the timestep
         """
-        # increment the formula lenght
+        # increment the formula length
         self.formula_length += 1
 
         # for actions
@@ -239,6 +212,11 @@ class EncoderGrounded(Encoder):
             key   = str_repr(grounded_action)
             keyt  = str_repr(grounded_action, t)
             act_var = z3.Bool(keyt, ctx=self.ctx)
+            # record metadata
+            self.var_metadata[key] = {
+                "kind": "action",
+                "sort": str(act_var.sort())
+            }
             # add to the up <-> z3 mapping
             self.up_actions_to_z3[key].append(act_var)
             self.z3_actions_to_up[act_var] = key
@@ -256,97 +234,12 @@ class EncoderGrounded(Encoder):
                 raise TypeError
             # add to the up <-> z3 mapping
             self.up_fluent_to_z3[key].append(fluent_var)
-
-    def encode_initial_state(self):
-        """!
-        Encodes formula defining initial state
-        @returns: Z3 formula asserting initial state
-        """
-        t = 0
-        initial = []
-        for FNode, initial_value in self.task.initial_values.items():
-            fluent = self._expr_to_z3(FNode, t)
-            value  = self._expr_to_z3(initial_value, t)
-            initial.append(fluent == value)
-        
-        return initial
-
-    def encode_goal_state(self, t):
-        """!
-        Encodes formula defining goal state
-
-        @param t: the timestep
-        @returns: Z3 formula asserting propositional and numeric subgoals
-        """
-        goal = []
-        for goal_pred in self.task.goals:
-            goal.append(self._expr_to_z3(goal_pred, t + 1))
-        return goal
-
-    def encode_actions(self, t):
-        """!
-        Encodes the transition function. That is, the actions.
-        a -> Pre
-        a -> Eff
-
-        @param t: the timestep
-        @returns: list of Z3 formulas asserting the actions
-        """
-        actions = []
-        for grounded_action in self.task.actions:
-            key = str_repr(grounded_action)
-            action_var = self.up_actions_to_z3[key][t]
-
-            # translate the action precondition
-            action_pre = []
-            for pre in grounded_action.preconditions:
-                action_pre.append(self._expr_to_z3(pre, t))
-            # translate the action effect
-            action_eff = []
-            for eff in grounded_action.effects:
-               action_eff.append(self._expr_to_z3(eff, t))
-
-            # the proper encoding
-            action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)
-            actions.append(z3.Implies(action_var, action_pre, ctx=self.ctx))
-            action_eff = z3.And(action_eff) if len(action_eff) > 0 else z3.BoolVal(True, ctx=self.ctx)
-            actions.append(z3.Implies(action_var, action_eff, ctx=self.ctx))
-        return z3.And(actions)
-
-    def encode_frame(self, t):
-        """!
-        Encodes the explanatory frame axiom
-
-        basically for each fluent, to change in value it means
-        that some action that can make it change has been executed
-        f(x,y,z, t) != f(x,y,z, t+1) -> (a /\\ g(y)) \\/ b \\/ (c /\\ (x > 3))
-        Note conditional effects are embedded in the action. 
-        """
-        frame = [] # the whole frame
-
-        # for each grounded fluent, we say its different from t to t + 1
-        grounded_up_fluents = [f for f, _ in self.task.initial_values.items()]
-        for grounded_fluent in grounded_up_fluents:
-            key    = str_repr(grounded_fluent)
-            var_t  = self.up_fluent_to_z3[key][t]
-            var_t1 = self.up_fluent_to_z3[key][t + 1]
-
-            # for each possible modification
-            or_actions = []
-            or_actions.extend(self.frame_add[key])
-            or_actions.extend(self.frame_del[key])
-            or_actions.extend(self.frame_num[key])
-
-            # simplify the list in case its empty
-            if len(or_actions) == 0:
-                who_can_change_fluent = z3.BoolVal(False, ctx=self.ctx)
-            else:
-                who_can_change_fluent = z3.Or([
-                     z3.And(self._expr_to_z3(cond, t), self.up_actions_to_z3[x][t]) for (cond, x) in or_actions
-                     ])
-
-            frame.append(z3.Implies(var_t != var_t1, who_can_change_fluent, ctx=self.ctx))
-        return frame
+            # record metadata
+            if t ==0:
+                self.var_metadata[key] = {
+                    "kind": "fluent",
+                    "sort": str(fluent_var.sort())
+                }
 
     def _expr_to_z3(self, expr, t, c=None):
         """!
@@ -414,7 +307,7 @@ class EncoderGrounded(Encoder):
         else:
             raise TypeError(f"Unsupported expression: {expr} of type {type(expr)}")
 
-class EncoderSequential(EncoderGrounded):
+class EncoderSequentialNative(EncoderGroundedNative):
     """
     Implementation of the classical sequential encoding of Kautz & Selman 1992
     where each timestep can have exactly one action.
@@ -422,7 +315,7 @@ class EncoderSequential(EncoderGrounded):
     def __init__(self, task):
         super().__init__("seq", task, LinearModifier(), parallel=False)
 
-class EncoderForall(EncoderGrounded):
+class EncoderForallNative(EncoderGroundedNative):
     """
     Forall-step encoding, allowing parallelisation in a real-world manner by permitting multiple
     actions per step.
@@ -431,7 +324,7 @@ class EncoderForall(EncoderGrounded):
         super().__init__("parForall", task, 
                          ParallelModifier(MutexSemantics.FORALL, lazy=False), parallel=True)
 
-class EncoderExists(EncoderGrounded):
+class EncoderExistsNative(EncoderGroundedNative):
     """
     Exists-step encoding allowing a more relaxed parallelisation than forall.
     """
@@ -439,7 +332,7 @@ class EncoderExists(EncoderGrounded):
         super().__init__("parExists", task, 
                          ParallelModifier(MutexSemantics.EXISTS, lazy=False), parallel=True)
 
-class EncoderForallLazy(EncoderGrounded):
+class EncoderForallLazyNative(EncoderGroundedNative):
     """
     Lazy Forall-step encoding, initially adds no interference mutexes and determines
     when to add them lazily
@@ -448,7 +341,7 @@ class EncoderForallLazy(EncoderGrounded):
         super().__init__("parLazyForall", task, 
                          ParallelModifier(MutexSemantics.FORALL, lazy=True), parallel=True)
 
-class EncoderExistsLazy(EncoderGrounded):
+class EncoderExistsLazyNative(EncoderGroundedNative):
     """
     Lazy Exists-step encoding, initially adds no interference mutexes and determines
     when to add them lazily
