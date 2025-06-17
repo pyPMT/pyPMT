@@ -409,7 +409,7 @@ class EncoderForall(EncoderGrounded):
     """
     def __init__(self, task):
         super().__init__("parForall", task, 
-                         ParallelModifier(MutexSemantics.FORALL, lazy=False), parallel=True, lazyFrame=False)
+                         ParallelModifier(MutexSemantics.FORALL, lazyInterference=False), parallel=True, lazyFrame=False)
 
 class EncoderExists(EncoderGrounded):
     """
@@ -417,7 +417,7 @@ class EncoderExists(EncoderGrounded):
     """
     def __init__(self, task):
         super().__init__("parExists", task, 
-                         ParallelModifier(MutexSemantics.EXISTS, lazy=False), parallel=True, lazyFrame=False)
+                         ParallelModifier(MutexSemantics.EXISTS, lazyInterference=False), parallel=True, lazyFrame=False)
 
 class EncoderForallLazy(EncoderGrounded):
     """
@@ -426,7 +426,7 @@ class EncoderForallLazy(EncoderGrounded):
     """
     def __init__(self, task):
         super().__init__("parLazyForall", task, 
-                         ParallelModifier(MutexSemantics.FORALL, lazy=True), parallel=True, lazyFrame=False)
+                         ParallelModifier(MutexSemantics.FORALL, lazyInterference=True), parallel=True, lazyFrame=False)
 
 class EncoderExistsLazy(EncoderGrounded):
     """
@@ -435,7 +435,7 @@ class EncoderExistsLazy(EncoderGrounded):
     """
     def __init__(self, task):
         super().__init__("parLazyExists", task,
-                         ParallelModifier(MutexSemantics.EXISTS, lazy=True), parallel=True, lazyFrame=False)
+                         ParallelModifier(MutexSemantics.EXISTS, lazyInterference=True), parallel=True, lazyFrame=False)
 
 
 class EncoderForallFrame(EncoderGrounded):
