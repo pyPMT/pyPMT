@@ -149,4 +149,6 @@ def main(args=None):
         parser.print_help()
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    args = [    "solve",    "--encoding", "exists", "--domain", "../tests/pddl/fo-counters/domain.pddl",    "--problem", "../tests/pddl/fo-counters/problem.pddl"]
+    main(args)
+
