@@ -3,7 +3,7 @@ import logging
 
 from unified_planning.shortcuts import CompilationKind
 from pypmt.encoders.R2E import EncoderRelaxed2Exists
-from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists, EncoderForallLazy, EncoderExistsLazy
+from pypmt.encoders.basic import EncoderForall, EncoderSequential, EncoderExists, EncoderForallLazy, EncoderExistsLazy, SymbolicEncoder
 from pypmt.encoders.SequentialLifted import EncoderSequentialLifted
 from pypmt.encoders.SequentialQFUF import EncoderSequentialQFUF
 from pypmt.encoders.OMT import EncoderSequentialOMT
@@ -65,6 +65,13 @@ class Config:
     ]
 
     valid_configs = {
+        "symbolic": {
+            "encoder": SymbolicEncoder,
+            "search": SMTSearch,
+            "compilationlist": grounded_encoders_default_compilation_list,
+            "propagator": None,
+            "description" : "A simple sequential encoding"
+        },
         "seq": {
             "encoder": EncoderSequential,
             "search": SMTSearch,

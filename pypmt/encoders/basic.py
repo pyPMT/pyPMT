@@ -433,3 +433,51 @@ class EncoderExistsLazy(EncoderGrounded):
     def __init__(self, task):
         super().__init__("parLazyExists", task,
                          ParallelModifier(MutexSemantics.EXISTS, lazy=True), parallel=True)
+
+class SymbolicEncoder(EncoderGrounded):
+    def __init__(self, task):
+        super().__init__("seq", task, LinearModifier(), parallel=False)
+
+    def encode_actions(self, t):
+        # first encode basic actions.
+        actions = []
+        for grounded_action in self.task.actions:
+            key = str_repr(grounded_action)
+            action_var = self.up_actions_to_z3[key][t]
+
+            # translate the action precondition
+            action_pre = []
+            for pre in grounded_action.preconditions:
+                action_pre.append(self._expr_to_z3(pre, t))
+            # translate the action effect
+            action_eff = []
+            for eff in grounded_action.effects:
+               action_eff.append(self._expr_to_z3(eff, t))
+
+            # the proper encoding
+            action_pre = z3.And(action_pre) if len(action_pre) > 0 else z3.BoolVal(True, ctx=self.ctx)
+            actions.append(z3.Implies(action_var, action_pre, ctx=self.ctx))
+            action_eff = z3.And(action_eff) if len(action_eff) > 0 else z3.BoolVal(True, ctx=self.ctx)
+            actions.append(z3.Implies(action_var, action_eff, ctx=self.ctx))
+
+        import itertools
+        # This is a simple idea, let's combine actions in equal bins.
+        self.num_bins = 15
+        action_bins = defaultdict(list)
+        for i, a in enumerate(self.task.actions):
+            action_bins[i % self.num_bins].append(a)
+
+        # now for every bin we need to create combination of on and off for every action.
+        abstracted_actions = []
+        for idx, bin in enumerate(action_bins.values()):
+            abstracted_action = z3.Bool(f"abstracted_action_{idx}_{t}", ctx=self.ctx)
+            abstracted_actions.append(abstracted_action)
+            actions.append(z3.Implies(abstracted_action, z3.And(self.up_actions_to_z3[str_repr(a)][t] for a in bin), ctx=self.ctx))
+        abstracted_actions.append(z3.PbEq([(a, 1) for a in abstracted_actions], 1, ctx=self.ctx))
+        
+        return z3.And(actions + abstracted_actions)
+
+    def extract_plan(self, model, horizon):
+        plan = SequentialPlan([])
+        pass
+        return SMTSequentialPlan(plan, self.task)
