@@ -225,6 +225,8 @@ class EncoderGrounded(Encoder):
             keyt = str_repr(fe, t)
             if fe.type.is_real_type():
                 self.up_fluent_to_z3[key].append(z3.Real(keyt, ctx=self.ctx))
+            elif fe.type.is_int_type():
+                self.up_fluent_to_z3[key].append(z3.Int(keyt, ctx=self.ctx))
             elif fe.type.is_bool_type():
                 self.up_fluent_to_z3[key].append(z3.Bool(keyt, ctx=self.ctx))
             else:
