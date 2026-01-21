@@ -145,8 +145,8 @@ def solveUP(task, conf:Config, validate_plan:bool=True):
         log(f"Plan length: {len(plan)}\n{plan}", 1)
         return plan
     else:
-        log(f'The plan is INVALID! {plan.validation_fail_reason}', 1)
-        log(f"Plan length: {len(plan)}\n{plan}", 1)
+        log(f'The plan is INVALID!', 1)
+        # log(f"Plan length: {len(plan)}\n{plan}", 1)
         return None
 
 def dump_smtlib(domainfile:str, problemfile:str, conf:Config):
